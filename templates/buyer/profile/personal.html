@@ -1,0 +1,320 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}Personal Information - Gym Store{% endblock %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('buyer_home') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('buyer_profile') }}">Profile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Personal Information</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Profile Menu Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i>Profile Menu</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('buyer_profile') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('buyer_profile_personal') }}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </a>
+                    <a href="{{ url_for('buyer_orders') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag me-2"></i>Order History
+                    </a>
+                    <a href="{{ url_for('buyer_profile_addresses') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map-marker-alt me-2"></i>Saved Addresses
+                    </a>
+                    <a href="{{ url_for('buyer_profile_wishlist') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart me-2"></i>Wishlist & Favorites
+                    </a>
+                    <a href="{{ url_for('notification_center') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="personalInfoForm">
+                        <div class="row">
+                            <!-- Profile Picture Section -->
+                            <div class="col-md-4 text-center mb-4">
+                                <div class="profile-picture-section">
+                                    <div class="current-picture mb-3">
+                                        {% if user.profile_image %}
+                                            <img src="{{ user.profile_image }}" alt="{{ user.full_name }}" class="profile-picture rounded-circle" id="profilePreview">
+                                        {% else %}
+                                            <div class="profile-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" id="profilePreview">
+                                                <span class="fs-1">{{ user.first_name[0] }}{{ user.last_name[0] }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="picture-controls">
+                                        <input type="file" class="form-control d-none" id="profile_image" name="profile_image" accept="image/*">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('profile_image').click()">
+                                            <i class="fas fa-camera me-2"></i>Change Picture
+                                        </button>
+                                        {% if user.profile_image %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" onclick="removePicture()">
+                                            <i class="fas fa-trash me-2"></i>Remove
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Personal Details -->
+                            <div class="col-md-8">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="phone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}" placeholder="+63 9XX XXX XXXX">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Address Information -->
+                        <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Address Information</h5>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="address" class="form-label">Street Address</label>
+                                <textarea class="form-control" id="address" name="address" rows="2" placeholder="House/Unit Number, Street Name, Subdivision">{{ user.address or '' }}</textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" value="{{ user.city or '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">Province/State</label>
+                                <input type="text" class="form-control" id="state" name="state" value="{{ user.state or '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="zip_code" class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" value="{{ user.zip_code or '' }}">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Account Information -->
+                        <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Account Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                                <small class="form-text text-muted">Username cannot be changed</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Member Since</label>
+                                <input type="text" class="form-control" value="{{ user.created_at.strftime('%B %d, %Y') }}" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('buyer_profile') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <a href="#" class="btn btn-outline-warning me-2" onclick="showPasswordModal()">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordModalLabel">
+                    <i class="fas fa-key me-2"></i>Change Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="passwordForm" action="{{ url_for('buyer_profile_password') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                        <small class="form-text text-muted">Password must be at least 6 characters long</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.profile-placeholder {
+    width: 150px;
+    height: 150px;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.profile-picture-section {
+    position: relative;
+}
+
+.picture-controls {
+    margin-top: 1rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+}
+
+.list-group-item.active {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+
+@media (max-width: 768px) {
+    .profile-picture,
+    .profile-placeholder {
+        width: 120px;
+        height: 120px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Profile picture preview
+document.getElementById('profile_image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePreview');
+            if (preview.tagName === 'IMG') {
+                preview.src = e.target.result;
+            } else {
+                // Replace placeholder with image
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'profile-picture rounded-circle';
+                img.id = 'profilePreview';
+                preview.parentNode.replaceChild(img, preview);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function removePicture() {
+    if (confirm('Are you sure you want to remove your profile picture?')) {
+        // This would need to be implemented with an AJAX call to remove the picture
+        alert('Profile picture removal will be implemented in the next update.');
+    }
+}
+
+function showPasswordModal() {
+    $('#passwordModal').modal('show');
+}
+
+// Password confirmation validation
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (newPassword !== confirmPassword) {
+        e.preventDefault();
+        alert('New passwords do not match!');
+        return false;
+    }
+});
+
+// Form validation
+document.getElementById('personalInfoForm').addEventListener('submit', function(e) {
+    const firstName = document.getElementById('first_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    
+    if (!firstName || !lastName || !email) {
+        e.preventDefault();
+        alert('Please fill in all required fields (marked with *)');
+        return false;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        e.preventDefault();
+        alert('Please enter a valid email address');
+        return false;
+    }
+});
+</script>
+{% endblock %}

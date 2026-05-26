@@ -1,0 +1,574 @@
+{% extends "buyer/base.html" %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="h3 mb-3"><i class="fas fa-shopping-bag me-2"></i>My Orders</h1>
+        
+        <!-- Status Filter Tabs -->
+        <div class="btn-group flex-wrap" role="group">
+            <a href="{{ url_for('buyer_orders') }}" class="btn btn-sm {{ 'btn-primary' if not current_status else 'btn-outline-secondary' }}">All</a>
+            <a href="{{ url_for('buyer_orders', status='pending') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='pending' else 'btn-outline-secondary' }}">Pending</a>
+            <a href="{{ url_for('buyer_orders', status='confirmed') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='confirmed' else 'btn-outline-secondary' }}">Confirmed</a>
+            <a href="{{ url_for('buyer_orders', status='for_pickup') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='for_pickup' else 'btn-outline-secondary' }}">For Pickup</a>
+            <a href="{{ url_for('buyer_orders', status='picked_up') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='picked_up' else 'btn-outline-secondary' }}">Picked Up</a>
+            <a href="{{ url_for('buyer_orders', status='on_delivery') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='on_delivery' else 'btn-outline-secondary' }}">On Delivery</a>
+            <a href="{{ url_for('buyer_orders', status='delivered') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='delivered' else 'btn-outline-secondary' }}">Delivered</a>
+            <a href="{{ url_for('buyer_orders', status='completed') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='completed' else 'btn-outline-secondary' }}">Completed</a>
+            <a href="{{ url_for('buyer_orders', status='cancelled') }}" class="btn btn-sm {{ 'btn-primary' if current_status=='cancelled' else 'btn-outline-secondary' }}">Cancelled</a>
+        </div>
+    </div>
+
+    {% if orders.items %}
+    {% for order in orders.items %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="mb-1">
+                        <i class="fas fa-receipt me-2 text-primary"></i>
+                        <strong>{{ order.order_number }}</strong>
+                    </h6>
+                    <small class="text-muted">
+                        <i class="far fa-calendar me-1"></i>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                    </small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-{{ 'warning' if order.status == 'pending' else 'info' if order.status == 'confirmed' else 'primary' if order.status in ['preparing','for_pickup'] else 'success' if order.status in ['delivered','completed'] else 'danger' if order.status == 'cancelled' else 'secondary' }} me-1">
+                        {{ order.status.replace('_', ' ').title() }}
+                    </span>
+                    <span class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' if order.payment_status == 'pending' else 'danger' }}">
+                        {{ order.payment_status.title() }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% for item in order.order_items %}
+            <div class="row align-items-center mb-3 pb-3 {{ 'border-bottom' if not loop.last else '' }}">
+                <div class="col-2 col-md-1">
+                    {% if item.product.image_url %}
+                    <img src="{{ item.product.image_url }}" class="img-fluid rounded" style="width: 60px; height: 60px; object-fit: cover;" alt="{{ item.product.name }}">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fas fa-image text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-6 col-md-7">
+                    <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="text-decoration-none text-dark">
+                        <strong>{{ item.product.name }}</strong>
+                    </a>
+                    <div class="text-muted small mt-1">
+                        Qty: {{ item.quantity }} × ₱{{ "%.2f"|format(item.unit_price) }}
+                    </div>
+                    {% set is_reviewed = (item.product_id, order.id) in reviewed_pairs %}
+                    {% if order.status in ['delivered','confirmed','completed'] %}
+                        {% if is_reviewed %}
+                        <span class="badge bg-success mt-2"><i class="fas fa-check me-1"></i>Reviewed</span>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-primary mt-2 write-review-btn" data-order-id="{{ order.id }}" data-product-id="{{ item.product_id }}" data-product-name="{{ item.product.name }}">
+                            <i class="fas fa-star me-1"></i>Write Review
+                        </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="col-4 col-md-4 text-end">
+                    <strong class="text-primary">₱{{ "%.2f"|format(item.total_price) }}</strong>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer bg-light">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <strong>Order Total: <span class="text-primary">₱{{ "%.2f"|format(order.total_amount) }}</span></strong>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    {% if order.status == 'delivered' %}
+                    <form method="POST" action="{{ url_for('confirm_order_receipt', order_id=order.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="fas fa-check me-1"></i>Confirm Receipt
+                        </button>
+                    </form>
+                    {% endif %}
+                    <button class="btn btn-outline-primary btn-sm reorder-btn" data-order-id="{{ order.id }}">
+                        <i class="fas fa-redo me-1"></i>Reorder
+                    </button>
+                    <a href="{{ url_for('buyer_order_detail', order_id=order.id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Details
+                    </a>
+                    {% if order.status in ['pending', 'confirmed'] %}
+                    <button type="button" class="btn btn-outline-danger btn-sm cancel-order-btn" data-order-id="{{ order.id }}" data-order-number="{{ order.order_number }}">
+                        <i class="fas fa-times me-1"></i>Cancel Order
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% if order.status == 'cancelled' and order.cancellation_reason %}
+            <div class="alert alert-danger mt-2 mb-0 small">
+                <i class="fas fa-info-circle me-1"></i><strong>Cancelled:</strong> {{ order.cancellation_reason }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if orders.pages > 1 %}
+    <nav class="mt-3" aria-label="Orders pagination">
+        <ul class="pagination justify-content-center pagination-minimal">
+            {% if orders.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('buyer_orders', page=orders.prev_num, status=current_status) }}">&lt;</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&lt;</span>
+            </li>
+            {% endif %}
+            
+            <li class="page-item">
+                <span class="page-link page-number">{{ orders.page }}</span>
+            </li>
+            
+            {% if orders.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('buyer_orders', page=orders.next_num, status=current_status) }}">&gt;</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&gt;</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No orders yet</h5>
+        <a href="{{ url_for('buyer_shop') }}" class="btn btn-primary mt-2">Shop Now</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Review Modal (Static) -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalTitle">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reviewOrderId">
+                <input type="hidden" id="reviewProductId">
+                <div class="mb-3">
+                    <label class="form-label">Rating</label>
+                    <select class="form-select" id="reviewRating">
+                        <option value="5">★★★★★ (5 - Excellent)</option>
+                        <option value="4">★★★★☆ (4 - Good)</option>
+                        <option value="3">★★★☆☆ (3 - Average)</option>
+                        <option value="2">★★☆☆☆ (2 - Poor)</option>
+                        <option value="1">★☆☆☆☆ (1 - Terrible)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Title (optional)</label>
+                    <input type="text" class="form-control" id="reviewTitle" placeholder="Great product!">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Your Review *</label>
+                    <textarea class="form-control" id="reviewComment" rows="4" placeholder="Share your experience with this product..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Initialize order statuses from server
+var lastOrderStatuses = {{ order_statuses_json|safe }};
+</script>
+
+<script>
+// Simple vanilla JavaScript for review modal
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Review script loaded');
+    
+    // Get all review buttons
+    const reviewButtons = document.querySelectorAll('.write-review-btn');
+    console.log('Found review buttons:', reviewButtons.length);
+    
+    // Add click handler to each button
+    reviewButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Review button clicked!');
+            
+            const orderId = this.getAttribute('data-order-id');
+            const productId = this.getAttribute('data-product-id');
+            const productName = this.getAttribute('data-product-name');
+            
+            console.log('Opening review for:', productName, 'Order:', orderId, 'Product:', productId);
+            
+            // Set modal data
+            document.getElementById('reviewOrderId').value = orderId;
+            document.getElementById('reviewProductId').value = productId;
+            document.getElementById('reviewModalTitle').textContent = 'Review: ' + productName;
+            
+            // Clear form
+            document.getElementById('reviewRating').value = '5';
+            document.getElementById('reviewTitle').value = '';
+            document.getElementById('reviewComment').value = '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+            modal.show();
+        });
+    });
+    
+    // Submit review
+    document.getElementById('submitReviewBtn').addEventListener('click', function() {
+        const orderId = document.getElementById('reviewOrderId').value;
+        const productId = document.getElementById('reviewProductId').value;
+        const rating = parseInt(document.getElementById('reviewRating').value);
+        const title = document.getElementById('reviewTitle').value;
+        const comment = document.getElementById('reviewComment').value;
+        
+        if (!comment.trim()) {
+            alert('Please write a review comment');
+            return;
+        }
+        
+        console.log('Submitting review:', { orderId, productId, rating, title, comment });
+        
+        // Send AJAX request
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                product_id: productId,
+                rating: rating,
+                title: title,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Review response:', data);
+            if (data.success) {
+                alert('Review submitted successfully! Thank you!');
+                bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+                setTimeout(() => location.reload(), 500);
+            } else {
+                alert(data.message || 'Failed to submit review');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to submit review. Please try again.');
+        });
+    });
+});
+
+// Request Refund functionality
+$(document).on('click', '.request-refund-btn', function() {
+    const orderId = $(this).data('order-id');
+    const orderNumber = $(this).data('order-number');
+
+    const modal = $(`
+    <div class="modal fade" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Request Refund</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Request a refund for order <strong>${orderNumber}</strong>?</p>
+            <div class="mb-3">
+              <label class="form-label">Reason for refund request <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="refund-reason" rows="4" placeholder="Please explain why you need a refund..." required></textarea>
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Note:</strong> Your refund request will be reviewed by the seller. You'll be notified once it's processed.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-warning confirm-refund">Submit Refund Request</button>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+    $('body').append(modal);
+    const bsModal = new bootstrap.Modal(modal[0]);
+    bsModal.show();
+
+    modal.on('click', '.confirm-refund', function() {
+        const reason = $('#refund-reason').val().trim();
+        
+        if (!reason) {
+            showNotification('Please provide a reason for the refund request', 'error');
+            return;
+        }
+
+        $.ajax({
+            url: '/api/request_refund',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ order_id: orderId, reason: reason }),
+            success: function(resp) {
+                if (resp.success) {
+                    showNotification('Refund request submitted successfully', 'success');
+                    bsModal.hide();
+                    modal.on('hidden.bs.modal', () => modal.remove());
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showNotification(resp.message || 'Failed to submit refund request', 'error');
+                }
+            },
+            error: function() {
+                showNotification('Failed to submit refund request', 'error');
+            }
+        });
+    });
+
+    modal.on('hidden.bs.modal', function() { modal.remove(); });
+});
+
+// Event delegation for reorder functionality
+$(document).on('click', '.reorder-btn', function() {
+    const orderId = $(this).data('order-id');
+    if (confirm('Add all items from this order to your cart?')) {
+        $.ajax({
+            url: `/api/reorder/${orderId}`,
+            method: 'POST',
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message, 'success');
+                    updateCartCount();
+                } else {
+                    showAlert(response.message || 'Failed to reorder items', 'error');
+                }
+            },
+            error: function() {
+                showAlert('An error occurred. Please try again.', 'error');
+            }
+        });
+    }
+});
+
+// Event delegation for toggle order details
+$(document).on('click', '.toggle-details-btn', function() {
+    const orderId = $(this).data('order-id');
+    window.location.href = `/buyer/order/${orderId}`;
+});
+
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : type === 'info' ? 'alert-info' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').append(alertHtml);
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 3000);
+}
+
+// Real-time Order Status Updates - Check for updates every 15 seconds
+setInterval(checkOrderUpdates, 15000);
+
+function checkOrderUpdates() {
+    fetch('/api/buyer/order-updates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.orders) {
+                data.orders.forEach(order => {
+                    const oldStatus = lastOrderStatuses[order.id];
+                    const newStatus = order.status;
+                    
+                    if (oldStatus && oldStatus !== newStatus) {
+                        // Status changed! Show toast notification
+                        const statusMessages = {
+                            'confirmed': `✅ Order #${order.order_number} has been confirmed!`,
+                            'preparing': `📦 Order #${order.order_number} is being prepared!`,
+                            'for_pickup': `🚚 Order #${order.order_number} is ready for pickup!`,
+                            'picked_up': `📦 Order #${order.order_number} has been picked up by rider!`,
+                            'on_delivery': `🚗 Order #${order.order_number} is on the way to you!`,
+                            'delivered': `📬 Order #${order.order_number} has been delivered!`,
+                            'completed': `✅ Order #${order.order_number} is completed!`,
+                            'cancelled': `❌ Order #${order.order_number} has been cancelled.`
+                        };
+                        
+                        const message = statusMessages[newStatus] || `Order #${order.order_number} status updated to ${newStatus}`;
+                        
+                        if (typeof showToast === 'function') {
+                            showToast(message, 'info', 6000);
+                        }
+                        
+                        // Update stored status
+                        lastOrderStatuses[order.id] = newStatus;
+                        
+                        // Reload page after 2 seconds to show updated status
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error checking order updates:', error));
+}
+
+// Cancel Order Function
+$(document).on('click', '.cancel-order-btn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    const orderId = $(this).data('order-id');
+    const orderNumber = $(this).data('order-number');
+    
+    Swal.fire({
+        title: 'Cancel Order',
+        html: `
+            <p>Are you sure you want to cancel order <strong>${orderNumber}</strong>?</p>
+            <div class="text-start mt-3">
+                <label for="cancel-reason" class="form-label">Reason for cancellation (optional)</label>
+                <textarea id="cancel-reason" class="form-control" rows="3" placeholder="Please tell us why you're cancelling this order..."></textarea>
+            </div>
+            <small class="text-muted d-block mt-2">This action cannot be undone.</small>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Cancel Order',
+        cancelButtonText: 'No, Keep Order',
+        reverseButtons: true,
+        width: '500px',
+        preConfirm: () => {
+            return {
+                reason: document.getElementById('cancel-reason').value
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Cancelling Order...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Send cancel request
+            $.ajax({
+                url: `/api/orders/${orderId}/cancel`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    reason: result.value.reason
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Order Cancelled!',
+                            text: 'Your order has been cancelled successfully. The seller has been notified.',
+                            icon: 'success',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: response.message || 'Failed to cancel order',
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON?.message || 'An error occurred while cancelling the order';
+                    Swal.fire({
+                        title: 'Error',
+                        text: errorMsg,
+                        icon: 'error',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.clickable-product-name:hover {
+    color: #0d6efd !important;
+    text-decoration: underline !important;
+}
+
+/* Minimalist Pagination Styles */
+.pagination-minimal .page-link {
+    border: none;
+    background: transparent;
+    color: #333;
+    font-size: 2rem;
+    padding: 1rem 2rem;
+    margin: 0 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    min-width: 80px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-minimal .page-link:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.pagination-minimal .page-item.disabled .page-link {
+    color: #ccc;
+    background: transparent;
+}
+
+.pagination-minimal .page-number {
+    color: #333;
+    font-weight: 600;
+    background: transparent !important;
+    cursor: default;
+}
+</style>
+{% endblock %}
+
+

@@ -1,0 +1,236 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}My Profile - Gym Store{% endblock %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <!-- Profile Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); border: none; border-radius: 12px; overflow: hidden;">
+                <div class="card-body" style="padding: 2rem;">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            {% if user.profile_image %}
+                                <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); flex-shrink: 0;">
+                                    <img src="{{ user.profile_image }}" alt="{{ user.full_name }}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                </div>
+                            {% else %}
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center border border-white" style="width: 100px; height: 100px; font-size: 2.5rem; font-weight: 600; color: #2c3e50; box-shadow: 0 4px 12px rgba(0,0,0,0.2); flex-shrink: 0;">
+                                    {{ user.first_name[0] }}{{ user.last_name[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col">
+                            <h3 class="mb-2 text-white" style="font-weight: 600; font-size: 1.75rem;">{{ user.full_name }}</h3>
+                            <p class="mb-1 text-white" style="opacity: 0.9; font-size: 0.95rem;">
+                                <i class="fas fa-envelope me-2"></i>{{ user.email }}
+                            </p>
+                            <p class="mb-0 text-white" style="opacity: 0.9; font-size: 0.95rem;">
+                                <i class="fas fa-phone me-2"></i>{{ user.phone or 'Not provided' }}
+                            </p>
+                        </div>
+                        <div class="col-auto text-end">
+                            <div class="badge" style="background: rgba(255,255,255,0.2); color: white; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                                <i class="fas fa-user me-2"></i>Member
+                            </div>
+                            <div class="mt-2" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
+                                {{ user.role.title() }} Account
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm" style="border-radius: 12px; transition: transform 0.2s ease;">
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="mb-3" style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-shopping-bag" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <h4 class="mb-1" style="font-weight: 600; color: #333;">{{ total_orders }}</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Total Orders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm" style="border-radius: 12px; transition: transform 0.2s ease;">
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="mb-3" style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check-circle" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <h4 class="mb-1" style="font-weight: 600; color: #333;">{{ completed_orders }}</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm" style="border-radius: 12px; transition: transform 0.2s ease;">
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="mb-3" style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-clock" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <h4 class="mb-1" style="font-weight: 600; color: #333;">{{ pending_orders }}</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm" style="border-radius: 12px; transition: transform 0.2s ease;">
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="mb-3" style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-heart" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <h4 class="mb-1" style="font-weight: 600; color: #333;">{{ wishlist_count }}</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Wishlist Items</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Menu -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i>Profile Menu</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('buyer_profile_personal') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </a>
+                    <a href="{{ url_for('buyer_orders') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag me-2"></i>Order History
+                    </a>
+                    <a href="{{ url_for('buyer_profile_addresses') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map-marker-alt me-2"></i>Saved Addresses
+                    </a>
+                    <a href="{{ url_for('buyer_profile_wishlist') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart me-2"></i>Wishlist & Favorites
+                    </a>
+                    <a href="{{ url_for('notification_center') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                        {% if unread_notifications > 0 %}
+                            <span class="badge bg-danger ms-2">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('buyer_security_settings') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shield-alt me-2"></i>Security & Privacy
+                    </a>
+                    <a href="{{ url_for('support_tickets') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-headset me-2"></i>Support & Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <!-- Recent Orders -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Orders</h5>
+                    <a href="{{ url_for('buyer_orders') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                        {% for order in recent_orders %}
+                        <div class="order-item d-flex justify-content-between align-items-center {% if not loop.last %}border-bottom{% endif %} pb-3 mb-3">
+                            <div>
+                                <h6 class="mb-1">Order #{{ order.order_number }}</h6>
+                                <small class="text-muted">{{ order.created_at.strftime('%B %d, %Y') }}</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-{{ 'success' if order.status == 'confirmed' else 'warning' if order.status in ['pending', 'preparing'] else 'info' }}">
+                                        {{ order.status.replace('_', ' ').title() }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">₱{{ "%.2f"|format(order.total_amount) }}</div>
+                                <small class="text-muted">{{ order.order_items.count() }} items</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No orders yet. Start shopping to see your order history!</p>
+                            <a href="{{ url_for('buyer_shop') }}" class="btn btn-primary">
+                                <i class="fas fa-store me-2"></i>Start Shopping
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('buyer_shop') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-store me-2"></i>Browse Products
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('buyer_cart') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-shopping-cart me-2"></i>View Cart
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('buyer_profile_wishlist') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-heart me-2"></i>My Wishlist
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+.profile-avatar {
+    object-fit: cover;
+}
+
+.stat-icon {
+    opacity: 0.8;
+}
+
+.order-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showComingSoon(feature) {
+    alert(`${feature} feature is coming soon! Stay tuned for updates.`);
+}
+
+$(document).ready(function() {
+    // Add any dashboard-specific JavaScript here
+});
+</script>
+{% endblock %}

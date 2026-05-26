@@ -1,0 +1,187 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-history me-2 text-primary"></i>Product Approval History
+            </h1>
+            <p class="text-muted mb-0">{{ product.name }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_product_approvals') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Approvals
+            </a>
+        </div>
+    </div>
+
+    <!-- Product Info Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Product Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    {% if product.image_url %}
+                    <img src="{{ url_for('static', filename=product.image_url) }}" 
+                         alt="{{ product.name }}" class="img-thumbnail" style="width: 100%;">
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" 
+                         style="width: 100%; height: 150px;">
+                        <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-10">
+                    <h4>{{ product.name }}</h4>
+                    <p class="text-muted mb-2">{{ product.description }}</p>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Brand:</strong> {{ product.brand or 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Price:</strong>₱{{ "%.2f"|format(product.price) }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Stock:</strong> {{ product.stock_quantity }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Category:</strong> {{ product.category.name if product.category else 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Seller:</strong> {{ product.seller.business_name or product.seller.username }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Current Status:</strong>
+                            {% if product.approval_status == 'pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif product.approval_status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                            {% elif product.approval_status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if product.rejection_reason %}
+                    <div class="alert alert-danger mt-3">
+                        <strong>Rejection Reason:</strong> {{ product.rejection_reason }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval History Timeline -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Approval Timeline</h5>
+        </div>
+        <div class="card-body">
+            {% if history %}
+            <div class="timeline">
+                {% for entry in history %}
+                <div class="timeline-item mb-4">
+                    <div class="d-flex">
+                        <div class="timeline-marker me-3">
+                            {% if entry.action == 'submitted' %}
+                            <i class="fas fa-upload fa-2x text-primary"></i>
+                            {% elif entry.action == 'approved' %}
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                            {% elif entry.action == 'rejected' %}
+                            <i class="fas fa-times-circle fa-2x text-danger"></i>
+                            {% elif entry.action == 'resubmitted' %}
+                            <i class="fas fa-redo fa-2x text-warning"></i>
+                            {% endif %}
+                        </div>
+                        <div class="timeline-content flex-grow-1">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                {% if entry.action == 'submitted' %}
+                                                <span class="badge bg-primary">Submitted</span>
+                                                {% elif entry.action == 'approved' %}
+                                                <span class="badge bg-success">Approved</span>
+                                                {% elif entry.action == 'rejected' %}
+                                                <span class="badge bg-danger">Rejected</span>
+                                                {% elif entry.action == 'resubmitted' %}
+                                                <span class="badge bg-warning text-dark">Resubmitted</span>
+                                                {% endif %}
+                                            </h6>
+                                            <p class="text-muted mb-0">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {{ entry.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                            </p>
+                                        </div>
+                                        {% if entry.admin %}
+                                        <div class="text-end">
+                                            <small class="text-muted">
+                                                <i class="fas fa-user-shield me-1"></i>
+                                                {{ entry.admin.username }}
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if entry.reason %}
+                                    <div class="alert alert-warning mt-3 mb-0">
+                                        <strong>Reason:</strong> {{ entry.reason }}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if entry.notes %}
+                                    <p class="mt-2 mb-0">
+                                        <strong>Notes:</strong> {{ entry.notes }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No approval history available.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-marker {
+    position: relative;
+    z-index: 1;
+    background: white;
+}
+
+.timeline-content {
+    margin-left: 20px;
+}
+</style>
+{% endblock %}

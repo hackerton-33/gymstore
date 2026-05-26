@@ -1,0 +1,454 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}My Wishlist - Gym Store{% endblock %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('buyer_home') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('buyer_profile') }}">Profile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Wishlist & Favorites</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Profile Menu Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i>Profile Menu</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('buyer_profile') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('buyer_profile_personal') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </a>
+                    <a href="{{ url_for('buyer_orders') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag me-2"></i>Order History
+                    </a>
+                    <a href="{{ url_for('buyer_profile_addresses') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map-marker-alt me-2"></i>Saved Addresses
+                    </a>
+                    <a href="{{ url_for('buyer_profile_wishlist') }}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-heart me-2"></i>Wishlist & Favorites
+                    </a>
+                    <a href="{{ url_for('notification_center') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-heart me-2"></i>My Wishlist & Favorites</h4>
+                    <div class="wishlist-stats">
+                        <span class="badge bg-danger fs-6">{{ wishlist_items|length }} items</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if wishlist_items %}
+                        <!-- Wishlist Actions -->
+                        <div class="wishlist-actions mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                        <label class="form-check-label" for="selectAll">
+                                            Select All
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button class="btn btn-outline-primary btn-sm me-2" onclick="addSelectedToCart()">
+                                        <i class="fas fa-cart-plus me-2"></i>Add Selected to Cart
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="removeSelected()">
+                                        <i class="fas fa-trash me-2"></i>Remove Selected
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wishlist Items -->
+                        <div class="wishlist-items">
+                            {% for item in wishlist_items %}
+                            <div class="wishlist-item card mb-3" data-item-id="{{ item.id }}">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-1">
+                                            <div class="form-check">
+                                                <input class="form-check-input item-checkbox" type="checkbox" value="{{ item.id }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <a href="{{ url_for('product_detail', product_id=item.product.id) }}" class="text-decoration-none">
+                                                {% if item.product.image_url %}
+                                                    <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded wishlist-image">
+                                                {% else %}
+                                                    <div class="wishlist-placeholder d-flex align-items-center justify-content-center rounded">
+                                                        <i class="fas fa-dumbbell fa-2x text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="product-info">
+                                                <h6 class="mb-1">
+                                                    <a href="{{ url_for('product_detail', product_id=item.product.id) }}" class="text-decoration-none text-dark">
+                                                        {{ item.product.name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="text-muted mb-1">{{ item.product.category.name }}</p>
+                                                <p class="text-muted mb-1">{{ item.product.brand or 'No Brand' }}</p>
+                                                <div class="rating">
+                                                    {% for i in range(1, 6) %}
+                                                        {% if i <= item.product.average_rating %}
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star text-muted"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    <small class="text-muted ms-1">({{ item.product.review_count }})</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="price-info">
+                                                {% if item.product.compare_price and item.product.compare_price > item.product.price %}
+                                                    <div class="current-price h6 text-success mb-1">₱{{ "%.2f"|format(item.product.price) }}</div>
+                                                    <div class="original-price text-muted text-decoration-line-through small">₱{{ "%.2f"|format(item.product.compare_price) }}</div>
+                                                    <div class="discount-badge badge bg-danger small">
+                                                        {{ "%.0f"|format(((item.product.compare_price - item.product.price) / item.product.compare_price) * 100) }}% OFF
+                                                    </div>
+                                                    <div class="product-quantity text-muted small mt-1">
+                                                        <i class="fas fa-box me-1"></i>{{ item.product.stock_quantity }} available
+                                                    </div>
+                                                {% else %}
+                                                    <div class="current-price h6 text-primary">₱{{ "%.2f"|format(item.product.price) }}</div>
+                                                    <div class="product-quantity text-muted small mt-1">
+                                                        <i class="fas fa-box me-1"></i>{{ item.product.stock_quantity }} available
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="stock-status mt-2">
+                                                {% if item.product.stock_quantity > 0 %}
+                                                    <span class="badge bg-success">In Stock</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Out of Stock</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="item-actions">
+                                                {% if item.product.stock_quantity > 0 %}
+                                                    <button class="btn btn-primary btn-sm w-100 mb-2 add-to-cart-btn" data-product-id="{{ item.product.id }}">
+                                                        <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                                    </button>
+                                                {% else %}
+                                                    <button class="btn btn-secondary btn-sm w-100 mb-2" disabled>
+                                                        <i class="fas fa-times me-1"></i>Out of Stock
+                                                    </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-danger btn-sm w-100 remove-wishlist-btn" data-item-id="{{ item.id }}">
+                                                    <i class="fas fa-heart-broken me-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Pagination would go here if needed -->
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-heart fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Your wishlist is empty</h5>
+                            <p class="text-muted">Save your favorite gym equipment for later!</p>
+                            <a href="{{ url_for('buyer_shop') }}" class="btn btn-primary">
+                                <i class="fas fa-store me-2"></i>Start Shopping
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recommended Products -->
+            {% if wishlist_items %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>You Might Also Like</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- This would show recommended products based on wishlist items -->
+                        <div class="col-12 text-center text-muted py-3">
+                            <p>Personalized recommendations coming soon!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.wishlist-image {
+    height: 80px;
+    width: 80px;
+    object-fit: cover;
+}
+
+.wishlist-placeholder {
+    height: 80px;
+    width: 80px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+}
+
+.wishlist-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wishlist-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.product-info h6 a:hover {
+    color: #0d6efd !important;
+    text-decoration: underline !important;
+}
+
+.rating i {
+    font-size: 0.9rem;
+}
+
+.price-info {
+    text-align: center;
+}
+
+.item-actions {
+    text-align: center;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+}
+
+.list-group-item.active {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+
+.wishlist-actions {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .wishlist-item .row > div {
+        margin-bottom: 1rem;
+    }
+    
+    .item-actions {
+        text-align: left;
+    }
+    
+    .price-info {
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+// Individual checkbox change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-checkbox')) {
+        const allCheckboxes = document.querySelectorAll('.item-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        
+        selectAllCheckbox.checked = allCheckboxes.length === checkedCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+    }
+});
+
+// Event delegation for add to cart buttons
+$(document).on('click', '.add-to-cart-btn', function() {
+    const productId = $(this).data('product-id');
+    $.ajax({
+        url: '/api/add_to_cart',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            product_id: productId,
+            quantity: 1
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert('Product added to cart successfully!', 'success');
+                updateCartCount();
+            } else {
+                showAlert(response.message || 'Failed to add product to cart', 'error');
+            }
+        },
+        error: function() {
+            showAlert('An error occurred. Please try again.', 'error');
+        }
+    });
+});
+
+// Event delegation for remove from wishlist buttons
+$(document).on('click', '.remove-wishlist-btn', function() {
+    const itemId = $(this).data('item-id');
+    if (confirm('Remove this item from your wishlist?')) {
+        $.ajax({
+            url: '/api/wishlist/remove',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                item_id: itemId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    $(`[data-item-id="${itemId}"]`).closest('.wishlist-item').remove();
+                    showAlert('Item removed from wishlist', 'success');
+                    
+                    // Check if wishlist is now empty
+                    if ($('.wishlist-item').length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    showAlert(response.message || 'Failed to remove item', 'error');
+                }
+            },
+            error: function() {
+                showAlert('An error occurred. Please try again.', 'error');
+            }
+        });
+    }
+});
+
+function addSelectedToCart() {
+    const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+    if (selectedItems.length === 0) {
+        showAlert('Please select items to add to cart', 'warning');
+        return;
+    }
+    
+    const productIds = Array.from(selectedItems).map(checkbox => {
+        const wishlistItem = checkbox.closest('.wishlist-item');
+        const addToCartBtn = wishlistItem.querySelector('[onclick^="addToCart"]');
+        if (addToCartBtn && !addToCartBtn.disabled) {
+            return addToCartBtn.getAttribute('onclick').match(/\d+/)[0];
+        }
+        return null;
+    }).filter(id => id !== null);
+    
+    if (productIds.length === 0) {
+        showAlert('Selected items are out of stock', 'warning');
+        return;
+    }
+    
+    // Add each product to cart
+    let addedCount = 0;
+    productIds.forEach(productId => {
+        $.ajax({
+            url: '/api/add_to_cart',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                product_id: parseInt(productId),
+                quantity: 1
+            }),
+            success: function(response) {
+                addedCount++;
+                if (addedCount === productIds.length) {
+                    showAlert(`${addedCount} items added to cart successfully!`, 'success');
+                    updateCartCount();
+                }
+            }
+        });
+    });
+}
+
+function removeSelected() {
+    const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+    if (selectedItems.length === 0) {
+        showAlert('Please select items to remove', 'warning');
+        return;
+    }
+    
+    if (confirm(`Remove ${selectedItems.length} selected items from your wishlist?`)) {
+        selectedItems.forEach(checkbox => {
+            const itemId = checkbox.value;
+            const wishlistItem = checkbox.closest('.wishlist-item');
+            
+            $.ajax({
+                url: '/api/wishlist/remove',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    item_id: parseInt(itemId)
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        wishlistItem.remove();
+                    }
+                }
+            });
+        });
+        
+        showAlert('Selected items removed from wishlist', 'success');
+        
+        // Check if wishlist is now empty
+        setTimeout(() => {
+            if (document.querySelectorAll('.wishlist-item').length === 0) {
+                location.reload();
+            }
+        }, 1000);
+    }
+}
+
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').append(alertHtml);
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 3000);
+}
+</script>
+{% endblock %}

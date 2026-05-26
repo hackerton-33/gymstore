@@ -1,0 +1,130 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}Support & Reports - Daily Fitness{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-headset me-2"></i>Support & Reports</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+            <i class="fas fa-plus me-2"></i>New Ticket
+        </button>
+    </div>
+
+    <!-- Tickets List -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ticket #</th>
+                            <th>Subject</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td><strong>{{ ticket.ticket_number }}</strong></td>
+                            <td>{{ ticket.subject }}</td>
+                            <td><span class="badge bg-secondary">{{ ticket.category.replace('_', ' ').title() }}</span></td>
+                            <td>
+                                {% if ticket.status == 'open' %}
+                                <span class="badge bg-warning">Open</span>
+                                {% elif ticket.status == 'in_progress' %}
+                                <span class="badge bg-info">In Progress</span>
+                                {% elif ticket.status == 'resolved' %}
+                                <span class="badge bg-success">Resolved</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Closed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.priority == 'urgent' %}
+                                <span class="badge bg-danger">Urgent</span>
+                                {% elif ticket.priority == 'high' %}
+                                <span class="badge bg-warning">High</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ ticket.priority.title() }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ticket.created_at.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('view_support_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+                <h5>No Support Tickets</h5>
+                <p class="text-muted">You haven't created any support tickets yet.</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+                    Create Your First Ticket
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- New Ticket Modal -->
+<div class="modal fade" id="newTicketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create Support Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Subject <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" name="category" required>
+                            <option value="">Select category...</option>
+                            <option value="account">Account Issues</option>
+                            <option value="order">Order Problems</option>
+                            <option value="product">Product Questions</option>
+                            <option value="payment">Payment Issues</option>
+                            <option value="delivery">Delivery Problems</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" name="priority">
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="message" rows="5" required placeholder="Please describe your issue in detail..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

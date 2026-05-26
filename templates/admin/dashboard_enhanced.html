@@ -1,0 +1,825 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-tachometer-alt me-2 text-primary"></i>Dashboard
+        </h1>
+        <p class="text-muted mb-0">Complete platform control center</p>
+    </div>
+
+    <!-- Alert Cards for Urgent Items -->
+    {% if analytics.complaints.urgent > 0 or analytics.products.low_stock > 0 or (pending_buyers + pending_sellers + pending_riders) > 0 or pending_products > 0 %}
+    <div class="row g-3 mb-4">
+        {% if analytics.complaints.urgent > 0 %}
+        <div class="col-md-6 col-lg-3">
+            <div class="alert-card alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <h6>Urgent Complaints</h6>
+                    <p>{{ analytics.complaints.urgent }} need attention</p>
+                    <a href="{{ url_for('admin_complaints', priority='urgent') }}">View Now →</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if analytics.products.low_stock > 0 %}
+        <div class="col-md-6 col-lg-3">
+            <div class="alert-card alert-warning">
+                <i class="fas fa-box"></i>
+                <div>
+                    <h6>Low Stock Alert</h6>
+                    <p>{{ analytics.products.low_stock }} products low</p>
+                    <a href="{{ url_for('admin_products', status='low_stock') }}">Check Inventory →</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if (pending_buyers + pending_sellers + pending_riders) > 0 %}
+        <div class="col-md-6 col-lg-3">
+            <div class="alert-card alert-info">
+                <i class="fas fa-user-clock"></i>
+                <div>
+                    <h6>Pending Approvals</h6>
+                    <p>{{ pending_buyers + pending_sellers + pending_riders }} users waiting</p>
+                    <a href="{{ url_for('admin_approvals') }}">Review Now →</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if pending_products > 0 %}
+        <div class="col-md-6 col-lg-3">
+            <div class="alert-card alert-primary">
+                <i class="fas fa-box-open"></i>
+                <div>
+                    <h6>Product Approvals</h6>
+                    <p>{{ pending_products }} products pending</p>
+                    <a href="{{ url_for('admin_product_approvals') }}">Review Products →</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Modern Key Metrics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon text-primary">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>₱{{ "%.2f"|format(analytics.revenue.total) }}</h3>
+                    <p>Total Revenue</p>
+                    <small class="text-muted">This Month: ₱{{ "%.2f"|format(analytics.revenue.monthly) }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon text-success">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>₱{{ "%.2f"|format(analytics.revenue.commissions_collected) }}</h3>
+                    <p>Commission Earned</p>
+                    <small class="text-muted">Pending: ₱{{ "%.2f"|format(analytics.revenue.commissions_pending) }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon text-info">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ analytics.users.total }}</h3>
+                    <p>Active Users</p>
+                    <small class="text-muted">{{ analytics.users.buyers }}B | {{ analytics.users.sellers }}S | {{ analytics.users.riders }}R</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon text-warning">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ analytics.orders.total }}</h3>
+                    <p>Orders</p>
+                    <small class="text-muted">{{ analytics.orders.completed }} Completed | {{ analytics.orders.pending }} Pending</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Platform Activity -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>Real-Time Platform Activity (Last 30 Days)
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success">
+                            <i class="fas fa-circle pulse-dot me-1"></i>Live
+                        </span>
+                        <small class="text-muted">Updates every 5 seconds</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="realtimeChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Revenue Overview -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-area text-primary me-2"></i>Revenue Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Health -->
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-heartbeat me-2"></i>Platform Health
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set success_rate = (analytics.orders.completed / analytics.orders.total * 100) if analytics.orders.total > 0 else 0 %}
+                    <div class="health-metric">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Order Success Rate</span>
+                            <span class="text-success fw-bold">{{ "%.1f"|format(success_rate) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: {{ success_rate }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric">
+                        <div class="d-flex justify-content-between">
+                            <span>Commission Rate</span>
+                            <span class="text-info fw-bold">{{ commission_rate }}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric">
+                        <div class="d-flex justify-content-between">
+                            <span>Open Complaints</span>
+                            <span class="text-warning fw-bold">{{ analytics.complaints.open }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric">
+                        <div class="d-flex justify-content-between">
+                            <span>Products Listed</span>
+                            <span class="text-primary fw-bold">{{ analytics.products.total }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performers and Best Products -->
+    <div class="row g-4 mb-4">
+        <!-- Top Performing Sellers -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trophy text-primary me-2"></i>Top Performing Sellers
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if top_sellers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Seller</th>
+                                    <th>Sales</th>
+                                    <th>Orders</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for seller in top_sellers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-circle bg-primary">
+                                                {{ seller.first_name[0] }}{{ seller.last_name[0] }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ seller.business_name or (seller.first_name + ' ' + seller.last_name) }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-success fw-bold">{{ "%.0f"|format(seller.total_sales) }}</td>
+                                    <td>{{ seller.order_count }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_user_detail', user_id=seller.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No sales data available yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Selling Products -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-fire text-primary me-2"></i>Best Selling Products
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if best_products %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Sold</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in best_products %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ product.name }}</div>
+                                        <small class="text-muted">₱{{ "%.2f"|format(product.price) }}</small>
+                                    </td>
+                                    <td class="fw-bold">{{ product.total_sold }}</td>
+                                    <td class="text-success fw-bold">{{ "%.0f"|format(product.total_revenue) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No product sales data available yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row g-4">
+        <!-- Recent Orders -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock text-primary me-2"></i>Recent Orders
+                    </h5>
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                    {% for order in recent_orders %}
+                    <div class="activity-item">
+                        <div class="activity-badge">
+                            {% if order.status == 'completed' %}
+                            <span class="badge bg-success">{{ order.status.title() }}</span>
+                            {% elif order.status == 'pending' %}
+                            <span class="badge bg-warning">{{ order.status.title() }}</span>
+                            {% elif order.status == 'cancelled' %}
+                            <span class="badge bg-danger">{{ order.status.title() }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ order.status.title() }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <div class="fw-bold">{{ order.order_number }}</div>
+                            <small class="text-muted">{{ order.buyer.first_name }} {{ order.buyer.last_name }}</small>
+                        </div>
+                        <div class="activity-meta">
+                            <div class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount) }}</div>
+                            <small class="text-muted">{{ order.created_at.strftime('%m/%d %H:%M') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-shopping-cart fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No recent orders</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Activity -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>Platform Activity
+                    </h5>
+                    <span class="badge bg-success">Live</span>
+                </div>
+                <div class="card-body">
+                    <!-- Quick Stats Grid -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="activity-stat-card bg-primary-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="text-muted small mb-1">Active Users</div>
+                                        <h4 class="mb-0 text-primary">{{ analytics.users.total_active or 0 }}</h4>
+                                    </div>
+                                    <i class="fas fa-users fa-2x text-primary opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="activity-stat-card bg-success-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="text-muted small mb-1">Today's Orders</div>
+                                        <h4 class="mb-0 text-success">{{ analytics.orders.today or 0 }}</h4>
+                                    </div>
+                                    <i class="fas fa-shopping-cart fa-2x text-success opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="activity-stat-card bg-warning-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="text-muted small mb-1">Active Sellers</div>
+                                        <h4 class="mb-0 text-warning">{{ analytics.users.sellers or 0 }}</h4>
+                                    </div>
+                                    <i class="fas fa-store fa-2x text-warning opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="activity-stat-card bg-info-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="text-muted small mb-1">Active Riders</div>
+                                        <h4 class="mb-0 text-info">{{ analytics.users.riders or 0 }}</h4>
+                                    </div>
+                                    <i class="fas fa-motorcycle fa-2x text-info opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="border-top pt-3">
+                        <div class="text-muted small mb-2 fw-semibold">QUICK ACTIONS</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-users me-1"></i>Manage Users
+                            </a>
+                            <a href="{{ url_for('admin_orders') }}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-shopping-bag me-1"></i>View Orders
+                            </a>
+                            <a href="{{ url_for('admin_products') }}" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-box me-1"></i>Products
+                            </a>
+                            <a href="{{ url_for('admin_analytics') }}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-chart-bar me-1"></i>Analytics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Pulse animation */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.pulse-dot {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Activity Stat Cards */
+.activity-stat-card {
+    padding: 1rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.activity-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.bg-primary-light {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #90caf9;
+}
+
+.bg-success-light {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-color: #a5d6a7;
+}
+
+.bg-warning-light {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-color: #ffcc80;
+}
+
+.bg-info-light {
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-color: #80deea;
+}
+
+/* Alert Cards */
+.alert-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.alert-card i {
+    font-size: 32px;
+}
+
+.alert-card h6 {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+}
+
+.alert-card p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #718096;
+}
+
+.alert-card a {
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.alert-danger {
+    border-left-color: #f56565;
+}
+
+.alert-danger i {
+    color: #f56565;
+}
+
+.alert-warning {
+    border-left-color: #ed8936;
+}
+
+.alert-warning i {
+    color: #ed8936;
+}
+
+.alert-info {
+    border-left-color: #4299e1;
+}
+
+.alert-info i {
+    color: #4299e1;
+}
+
+.alert-primary {
+    border-left-color: #667eea;
+}
+
+.alert-primary i {
+    color: #667eea;
+}
+
+/* Stat Cards - Clean White Design (Match Seller Dashboard) */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-right: 1.25rem;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: #2c3e50;
+}
+
+.stat-content p {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.stat-content small {
+    font-size: 0.85rem;
+    display: block;
+}
+
+/* Health Metrics */
+.health-metric {
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.health-metric:last-child {
+    border-bottom: none;
+}
+
+/* Use Bootstrap table styling */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+}
+
+/* Activity Items */
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-meta {
+    text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+    
+    .stat-content h3 {
+        font-size: 1.75rem;
+    }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Real-Time Platform Activity Chart
+const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
+
+const last30Days = [];
+const today = new Date();
+for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    last30Days.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
+}
+
+const initialData = Array(30).fill(0);
+
+const realtimeChart = new Chart(realtimeCtx, {
+    type: 'line',
+    data: {
+        labels: last30Days,
+        datasets: [{
+            label: 'Total Orders',
+            data: initialData,
+            borderColor: '#4299e1',
+            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#4299e1',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                padding: 12,
+                borderRadius: 8,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return 'Orders: ' + context.parsed.y;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: true, color: '#f0f0f0', drawBorder: false },
+                ticks: { color: '#718096', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 15 }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#f0f0f0', drawBorder: false },
+                ticks: { color: '#718096', font: { size: 11 }, stepSize: 1 }
+            }
+        }
+    }
+});
+
+async function updateRealtimeData() {
+    try {
+        const response = await fetch('/admin/analytics/realtime-data');
+        const data = await response.json();
+        
+        if (data.success) {
+            realtimeChart.data.datasets[0].data = data.orders_per_day;
+            realtimeChart.update('none');
+        }
+    } catch (error) {
+        console.error('Error fetching real-time data:', error);
+    }
+}
+
+setInterval(updateRealtimeData, 5000);
+updateRealtimeData();
+
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+            label: 'Revenue',
+            data: [1000, 1200, 1500, 1800, 2000, 2200, 2500, 2800, 3000, 3200, 3500, 4000],
+            borderColor: '#4299e1',
+            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#4299e1',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+        }, {
+            label: 'Commission',
+            data: [50, 60, 75, 90, 100, 110, 125, 140, 150, 160, 175, 200],
+            borderColor: '#48bb78',
+            backgroundColor: 'rgba(72, 187, 120, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#48bb78',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                    padding: 16,
+                    font: { size: 12 },
+                    color: '#4a5568',
+                    usePointStyle: true
+                }
+            },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                padding: 12,
+                borderRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: '#f0f0f0', drawBorder: false },
+                ticks: { color: '#718096' }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#f0f0f0', drawBorder: false },
+                ticks: {
+                    color: '#718096',
+                    callback: function(value) {
+                        return '$' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Sales (Last 30 Days)</h6>
+                    <h2 class="text-success">₱{{ "%.2f"|format(total_sales) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Orders (Last 30 Days)</h6>
+                    <h2 class="text-primary">{{ total_orders }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 10 Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Product</th>
+                                    <th>Units Sold</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if top_products %}
+                                    {% for product in top_products %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ product[0] }}</td>
+                                        <td>{{ product[1] }}</td>
+                                        <td>₱{{ "%.2f"|format(product[2]) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fas fa-box fa-2x mb-2"></i><br>
+                                            No product sales data available (requires OrderItem table)
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Customers -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Top 10 Customers</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Customer</th>
+                                    <th>Orders</th>
+                                    <th>Total Spent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if top_customers %}
+                                    {% for customer in top_customers %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ customer[0] }} {{ customer[1] }}</td>
+                                        <td>{{ customer[2] }}</td>
+                                        <td>₱{{ "%.2f"|format(customer[3]) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fas fa-users fa-2x mb-2"></i><br>
+                                            No customer data available for the last 30 days
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

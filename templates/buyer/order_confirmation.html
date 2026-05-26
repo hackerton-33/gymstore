@@ -1,0 +1,86 @@
+{% extends "buyer/base.html" %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-4">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h1 class="h2 text-success">Order Confirmed!</h1>
+                <p class="lead">Thank you for your purchase. Your order has been placed successfully.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Order Number</h6>
+                            <p class="text-muted">{{ order.order_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Order Date</h6>
+                            <p class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Total Amount</h6>
+                            <p class="text-muted">₱{{ "%.2f"|format(order.total_amount) }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Payment Method</h6>
+                            <p class="text-muted">{{ order.payment_method.title().replace('_', ' ') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Shipping Address</h6>
+                            <p class="text-muted">{{ order.shipping_address }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.order_items %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">{{ item.product.name }}</h6>
+                            <small class="text-muted">{{ item.product.category.name }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold">₱{{ "%.2f"|format(item.total_price) }}</span>
+                            <br>
+                            <small class="text-muted">Qty: {{ item.quantity }} @ {{ "%.2f"|format(item.unit_price) }}</small>
+                        </div>
+                    </div>
+                    {% if not loop.last %}
+                    <hr>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('buyer_shop') }}" class="btn btn-primary">
+                    <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                </a>
+                <a href="#" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-download me-2"></i>Download Receipt
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

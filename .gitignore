@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables (IMPORTANT - Contains OAuth Secrets!)
+.env
+.env.local
+.env.*.local
+
+# Firebase Service Account Key (IMPORTANT - Contains private key!)
+*firebase-adminsdk*.json
+serviceAccountKey.json
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Node / frontend toolchain
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# Uploads (User Generated Content)
+static/uploads/profile_pics/*
+!static/uploads/profile_pics/.gitkeep
+static/uploads/product_images/*
+!static/uploads/product_images/.gitkeep
+static/uploads/business_docs/*
+!static/uploads/business_docs/.gitkeep
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# OS
+Thumbs.db

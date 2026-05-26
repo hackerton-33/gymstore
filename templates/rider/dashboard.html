@@ -1,0 +1,424 @@
+{% extends "rider/base.html" %}
+
+{% block title %}Rider Dashboard - Gym Store{% endblock %}
+
+{% block rider_content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h4 mb-1 fw-bold">Dashboard</h1>
+            <p class="text-muted small mb-0">Manage deliveries and track earnings</p>
+        </div>
+        <a href="{{ url_for('rider_map') }}" class="btn btn-success btn-sm d-none d-lg-inline-flex align-items-center">
+            <i class="fas fa-map-marked-alt me-2"></i>View Map
+        </a>
+    </div>
+
+    <!-- Stats Cards - Minimalist -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary-light">
+                    <i class="fas fa-box text-primary"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Today's Deliveries</span>
+                    <h3 class="stat-value">{{ today_deliveries }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning-light">
+                    <i class="fas fa-motorcycle text-warning"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Ongoing</span>
+                    <h3 class="stat-value">{{ ongoing_deliveries|length }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-success-light">
+                    <i class="fas fa-check-circle text-success"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Completed</span>
+                    <h3 class="stat-value">{{ completed_this_month }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-info-light">
+                    <i class="fas fa-peso-sign text-info"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Month Earnings</span>
+                    <h3 class="stat-value">₱{{ "%.2f"|format(month_earnings) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row g-3">
+        <!-- Ongoing Deliveries -->
+        <div class="col-lg-8">
+            <div class="content-card">
+                <div class="card-header-minimal">
+                    <h6 class="mb-0 fw-semibold">Ongoing Deliveries</h6>
+                    <a href="{{ url_for('rider_orders') }}" class="btn btn-sm btn-link text-decoration-none">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if ongoing_deliveries %}
+                    <div class="delivery-list">
+                        {% for order in ongoing_deliveries %}
+                        <div class="delivery-item">
+                            <div class="delivery-info">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="order-number">{{ order.order_number }}</span>
+                                    {% if order.status == 'picked_up' %}
+                                    <span class="badge-minimal badge-warning">Picked Up</span>
+                                    {% elif order.status == 'on_delivery' %}
+                                    <span class="badge-minimal badge-info">On Delivery</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small mb-1">
+                                    <i class="fas fa-user me-1"></i>{{ order.buyer.username }}
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ order.shipping_address[:40] }}...
+                                </div>
+                            </div>
+                            <a href="{{ url_for('rider_order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No ongoing deliveries</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Available Orders -->
+            <div class="content-card mb-3">
+                <div class="card-header-minimal">
+                    <h6 class="mb-0 fw-semibold">Available for Pickup</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if available_orders %}
+                    <div class="available-list">
+                        {% for order in available_orders[:5] %}
+                        <div class="available-item">
+                            <div class="available-info">
+                                <div class="order-number mb-1">{{ order.order_number }}</div>
+                                <div class="text-muted small mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ order.shipping_address[:30] }}...
+                                </div>
+                                <div class="text-success small fw-semibold">
+                                    ₱{{ "%.2f"|format(order.total_amount|float * 0.05) }} commission
+                                </div>
+                            </div>
+                            <button data-order-id="{{ order.id }}" class="btn btn-sm btn-success accept-order-btn">
+                                Accept
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state-small">
+                        <p class="text-muted mb-0">No orders available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="content-card">
+                <div class="card-header-minimal">
+                    <h6 class="mb-0 fw-semibold">Recent Notifications</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if notifications %}
+                    <div class="notification-list">
+                        {% for notif in notifications %}
+                        <div class="notification-item">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span class="fw-semibold small">{{ notif.title }}</span>
+                                <span class="text-muted small">{{ notif.created_at.strftime('%I:%M %p') }}</span>
+                            </div>
+                            <p class="text-muted small mb-0">{{ notif.message }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state-small">
+                        <p class="text-muted mb-0">No notifications</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Minimalist Stats Cards */
+.stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.bg-primary-light { background: #e7f1ff; }
+.bg-warning-light { background: #fff3cd; }
+.bg-success-light { background: #d1f2eb; }
+.bg-info-light { background: #d1ecf1; }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: #212529;
+}
+
+/* Content Cards */
+.content-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.card-header-minimal {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Delivery List */
+.delivery-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.delivery-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f3f5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: background 0.2s;
+}
+
+.delivery-item:last-child {
+    border-bottom: none;
+}
+
+.delivery-item:hover {
+    background: #f8f9fa;
+}
+
+.delivery-info {
+    flex: 1;
+}
+
+.order-number {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.9rem;
+}
+
+.badge-minimal {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Available Orders */
+.available-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.available-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f3f5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.available-item:last-child {
+    border-bottom: none;
+}
+
+.available-info {
+    flex: 1;
+}
+
+/* Notification List */
+.notification-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.empty-state-small {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+/* Scrollbar */
+.delivery-list::-webkit-scrollbar,
+.available-list::-webkit-scrollbar,
+.notification-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.delivery-list::-webkit-scrollbar-thumb,
+.available-list::-webkit-scrollbar-thumb,
+.notification-list::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+}
+</style>
+
+<script>
+// Event delegation for accept order buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const acceptButtons = document.querySelectorAll('.accept-order-btn');
+    
+    acceptButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            acceptOrder(orderId);
+        });
+    });
+});
+
+function acceptOrder(orderId) {
+    if (!confirm('Accept this delivery order?')) return;
+    
+    fetch(`/rider/orders/${orderId}/accept`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => alert('Error accepting order: ' + err));
+}
+</script>
+{% endblock %}

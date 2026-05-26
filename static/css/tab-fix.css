@@ -1,0 +1,17 @@
+/* Fix for invisible text on light backgrounds */
+.btn-light, .bg-light {
+    color: #212529 !important;
+}
+
+.nav-pills .nav-link:not(.active) {
+    color: #212529 !important;
+}
+
+.nav-tabs .nav-link:not(.active) {
+    color: #212529 !important;
+}
+
+/* Ensure badges have proper contrast */
+.badge.bg-light {
+    color: #212529 !important;
+}

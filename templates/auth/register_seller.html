@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="mb-0 text-center">
+                        <i class="fas fa-store me-2"></i>Seller Registration
+                    </h4>
+                    <p class="text-center mb-0 mt-1 small">Join our marketplace and start selling</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-user me-2"></i>Personal Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="profile_image" class="form-label">Profile Image</label>
+                                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                                <div class="form-text">Upload your profile photo (optional)</div>
+                            </div>
+                        </div>
+
+                        <!-- Business Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-building me-2"></i>Business Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="business_name" class="form-label">Business Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="business_name" name="business_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="business_type" class="form-label">Business Type</label>
+                                <select class="form-select" id="business_type" name="business_type">
+                                    <option value="">Select Business Type</option>
+                                    <option value="sole_proprietorship">Sole Proprietorship</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="corporation">Corporation</option>
+                                    <option value="cooperative">Cooperative</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="business_address" class="form-label">Business Address</label>
+                                <textarea class="form-control" id="business_address" name="business_address" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="business_phone" class="form-label">Business Phone</label>
+                                <input type="tel" class="form-control" id="business_phone" name="business_phone">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="business_email" class="form-label">Business Email</label>
+                                <input type="email" class="form-control" id="business_email" name="business_email">
+                            </div>
+                        </div>
+
+                        <!-- Required Documents (3 Documents) -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-file-alt me-2"></i>Required Documents (3 Documents Required)
+                                </h5>
+                                <p class="text-muted mb-3">All sellers must provide the following documents for verification:</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="valid_id" class="form-label">Valid ID <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="valid_id" name="valid_id" required accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Government-issued ID (Driver's License, Passport, etc.)</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="business_permit" class="form-label">Business Permit <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="business_permit" name="business_permit" required accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Mayor's Permit or Business Permit</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="dti_certification" class="form-label">Tax Registration/DTI <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="dti_certification" name="dti_certification" required accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">DTI Certificate or BIR Registration</div>
+                            </div>
+                        </div>
+
+                        <!-- Address Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Address Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="region" class="form-label">Region <span class="text-danger">*</span></label>
+                                <select class="form-select" id="region" name="region" required>
+                                    <option value="">Select Region</option>
+                                    <option value="NCR">National Capital Region (NCR)</option>
+                                    <option value="CAR">Cordillera Administrative Region (CAR)</option>
+                                    <option value="Region I">Region I - Ilocos Region</option>
+                                    <option value="Region II">Region II - Cagayan Valley</option>
+                                    <option value="Region III">Region III - Central Luzon</option>
+                                    <option value="Region IV-A">Region IV-A - CALABARZON</option>
+                                    <option value="Region IV-B">Region IV-B - MIMAROPA</option>
+                                    <option value="Region V">Region V - Bicol Region</option>
+                                    <option value="Region VI">Region VI - Western Visayas</option>
+                                    <option value="Region VII">Region VII - Central Visayas</option>
+                                    <option value="Region VIII">Region VIII - Eastern Visayas</option>
+                                    <option value="Region IX">Region IX - Zamboanga Peninsula</option>
+                                    <option value="Region X">Region X - Northern Mindanao</option>
+                                    <option value="Region XI">Region XI - Davao Region</option>
+                                    <option value="Region XII">Region XII - SOCCSKSARGEN</option>
+                                    <option value="Region XIII">Region XIII - Caraga</option>
+                                    <option value="BARMM">Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="province" class="form-label">Province <span class="text-danger">*</span></label>
+                                <select class="form-select" id="province" name="province" required>
+                                    <option value="">Select Province</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="municipality" class="form-label">Municipality/City <span class="text-danger">*</span></label>
+                                <select class="form-select" id="municipality" name="municipality" required>
+                                    <option value="">Select Municipality/City</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="barangay" class="form-label">Barangay <span class="text-danger">*</span></label>
+                                <select class="form-select" id="barangay" name="barangay" required>
+                                    <option value="">Select Barangay</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label for="street_address" class="form-label">Street Address <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="street_address" name="street_address" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="zip_code" class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code">
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="terms" required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="{{ url_for('terms') }}" target="_blank">Terms and Conditions</a> <span class="text-danger">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Seller Application
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted">
+                            Already have an account? <a href="{{ url_for('index') }}">Login here</a><br>
+                            Want to register as a buyer? <a href="{{ url_for('register') }}">Register as Buyer</a><br>
+                            Want to register as a rider? <a href="{{ url_for('register_rider') }}">Register as Rider</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Philippine Address API Integration (placeholder)
+document.addEventListener('DOMContentLoaded', function() {
+    const regionSelect = document.getElementById('region');
+    const provinceSelect = document.getElementById('province');
+    const municipalitySelect = document.getElementById('municipality');
+    const barangaySelect = document.getElementById('barangay');
+
+    // Sample data structure (replace with actual API calls)
+    const addressData = {
+        'NCR': {
+            'Metro Manila': {
+                'Manila': ['Binondo', 'Ermita', 'Intramuros', 'Malate', 'Paco', 'Pandacan', 'Port Area', 'Quiapo', 'Sampaloc', 'San Andres', 'San Miguel', 'San Nicolas', 'Santa Ana', 'Santa Cruz', 'Santa Mesa', 'Tondo'],
+                'Quezon City': ['Bagong Pag-asa', 'Bahay Toro', 'Balingasa', 'Bungad', 'Damar', 'Damayan', 'Del Monte', 'Gulod', 'Lourdes', 'Maharlika', 'Manresa', 'Mariblo', 'Nagkaisang Nayon', 'Pag-ibig sa Nayon', 'Paraiso', 'Phil-Am', 'Project 6', 'Sacred Heart', 'Sienna', 'Talayan', 'Tandang Sora', 'Ugong Norte', 'Villa Maria Clara'],
+                'Makati': ['Bel-Air', 'Cembo', 'Comembo', 'Dasmariñas', 'Forbes Park', 'Guadalupe Nuevo', 'Guadalupe Viejo', 'Kasilawan', 'La Paz', 'Magallanes', 'Olympia', 'Palanan', 'Pembo', 'Pinagkaisahan', 'Pio del Pilar', 'Poblacion', 'Post Proper Northside', 'Post Proper Southside', 'Rizal', 'San Antonio', 'San Isidro', 'San Lorenzo', 'Santa Cruz', 'Singkamas', 'Tejeros', 'Urdaneta', 'Valenzuela']
+            }
+        },
+        'Region III': {
+            'Bulacan': {
+                'Malolos': ['Anilao', 'Atlag', 'Babatnin', 'Bagna', 'Bagong Nayon', 'Bangkal', 'Barihan', 'Bulihan', 'Bungahan', 'Caingin', 'Calero', 'Caliligawan', 'Canalate', 'Caniogan', 'Catmon', 'Guinhawa', 'Ligas', 'Longos', 'Look 1st', 'Look 2nd', 'Lugam', 'Mabolo', 'Masile', 'Mojon', 'Namayan', 'Niugan', 'Pamarawan', 'Panasahan', 'Pinagbakahan', 'San Agustin', 'San Gabriel', 'San Juan', 'San Pablo', 'San Vicente', 'Santiago', 'Santisima Trinidad', 'Santo Cristo', 'Santo Niño', 'Santo Rosario', 'Sumapang Bata', 'Sumapang Matanda', 'Taal', 'Tikay']
+            }
+        }
+    };
+
+    regionSelect.addEventListener('change', function() {
+        const selectedRegion = this.value;
+        provinceSelect.innerHTML = '<option value="">Select Province</option>';
+        municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+
+        if (selectedRegion) {
+            // Fetch provinces from API
+            fetch(`/api/address/provinces/${encodeURIComponent(selectedRegion)}`)
+                .then(response => response.json())
+                .then(provinces => {
+                    provinces.forEach(province => {
+                        const option = document.createElement('option');
+                        option.value = province;
+                        option.textContent = province;
+                        provinceSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching provinces:', error);
+                    // Fallback to static data
+                    if (addressData[selectedRegion]) {
+                        Object.keys(addressData[selectedRegion]).forEach(province => {
+                            const option = document.createElement('option');
+                            option.value = province;
+                            option.textContent = province;
+                            provinceSelect.appendChild(option);
+                        });
+                    }
+                });
+        }
+    });
+
+    provinceSelect.addEventListener('change', function() {
+        const selectedRegion = regionSelect.value;
+        const selectedProvince = this.value;
+        municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+
+        if (selectedProvince) {
+            // Fetch municipalities from API
+            fetch(`/api/address/municipalities/${encodeURIComponent(selectedProvince)}`)
+                .then(response => response.json())
+                .then(municipalities => {
+                    municipalities.forEach(municipality => {
+                        const option = document.createElement('option');
+                        option.value = municipality;
+                        option.textContent = municipality;
+                        municipalitySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching municipalities:', error);
+                    // Fallback to static data
+                    if (selectedRegion && addressData[selectedRegion] && addressData[selectedRegion][selectedProvince]) {
+                        Object.keys(addressData[selectedRegion][selectedProvince]).forEach(municipality => {
+                            const option = document.createElement('option');
+                            option.value = municipality;
+                            option.textContent = municipality;
+                            municipalitySelect.appendChild(option);
+                        });
+                    }
+                });
+        }
+    });
+
+    municipalitySelect.addEventListener('change', function() {
+        const selectedRegion = regionSelect.value;
+        const selectedProvince = provinceSelect.value;
+        const selectedMunicipality = this.value;
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+
+        if (selectedMunicipality) {
+            // Fetch barangays from API
+            fetch(`/api/address/barangays/${encodeURIComponent(selectedMunicipality)}`)
+                .then(response => response.json())
+                .then(barangays => {
+                    barangays.forEach(barangay => {
+                        const option = document.createElement('option');
+                        option.value = barangay;
+                        option.textContent = barangay;
+                        barangaySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching barangays:', error);
+                    // Fallback to static data
+                    if (selectedRegion && selectedProvince && selectedMunicipality && 
+                        addressData[selectedRegion] && addressData[selectedRegion][selectedProvince] && 
+                        addressData[selectedRegion][selectedProvince][selectedMunicipality]) {
+                        addressData[selectedRegion][selectedProvince][selectedMunicipality].forEach(barangay => {
+                            const option = document.createElement('option');
+                            option.value = barangay;
+                            option.textContent = barangay;
+                            barangaySelect.appendChild(option);
+                        });
+                    }
+                });
+        }
+    });
+});
+</script>
+{% endblock %}

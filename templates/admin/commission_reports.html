@@ -1,0 +1,207 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Commission Reports
+            </h1>
+            <p class="text-muted mb-0">Detailed commission breakdown and earnings</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin_commission_reports', period=period, export='csv') }}" 
+               class="btn btn-success">
+                <i class="fas fa-file-csv me-1"></i>Export CSV
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Period Filter -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('admin_commission_reports', period='week') }}" 
+                   class="btn {% if period == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Last 7 Days
+                </a>
+                <a href="{{ url_for('admin_commission_reports', period='month') }}" 
+                   class="btn {% if period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Last 30 Days
+                </a>
+                <a href="{{ url_for('admin_commission_reports', period='year') }}" 
+                   class="btn {% if period == 'year' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Last Year
+                </a>
+            </div>
+            <small class="text-muted ms-3">Showing data from {{ start_date.strftime('%Y-%m-%d') }}</small>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Commission</h6>
+                            <h3 class="mb-0 text-success">₱{{ "%.2f"|format(total_commission) }}</h3>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Orders</h6>
+                            <h3 class="mb-0">{{ total_orders }}</h3>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-shopping-cart fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Sales</h6>
+                            <h3 class="mb-0 text-primary">₱{{ "%.2f"|format(total_sales) }}</h3>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-chart-bar fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Commission Rate</h6>
+                            <h3 class="mb-0">{{ "%.1f"|format((total_commission / total_sales * 100) if total_sales > 0 else 0) }}%</h3>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-percentage fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Breakdown -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Commission by Seller</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Seller</th>
+                            <th class="text-center">Orders</th>
+                            <th class="text-end">Total Sales</th>
+                            <th class="text-end">Commission</th>
+                            <th class="text-center">Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in seller_stats %}
+                        <tr>
+                            <td>
+                                <strong>{{ stat.business_name or stat.username }}</strong>
+                                <br><small class="text-muted">@{{ stat.username }}</small>
+                            </td>
+                            <td class="text-center">{{ stat.order_count }}</td>
+                            <td class="text-end">₱{{ "%.2f"|format(stat.total_sales) }}</td>
+                            <td class="text-end text-success"><strong>₱{{ "%.2f"|format(stat.total_commission) }}</strong></td>
+                            <td class="text-center">
+                                <span class="badge bg-info">
+                                    {{ "%.1f"|format((stat.total_commission / stat.total_sales * 100) if stat.total_sales > 0 else 0) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No commission data available for this period
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Commissions -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Recent Commission Transactions</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Seller</th>
+                            <th class="text-end">Order Amount</th>
+                            <th class="text-center">Rate</th>
+                            <th class="text-end">Commission</th>
+                            <th class="text-center">Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comm in commissions[:50] %}
+                        <tr>
+                            <td><small>#{{ comm.order_id }}</small></td>
+                            <td><small>{{ comm.seller.username if comm.seller else 'N/A' }}</small></td>
+                            <td class="text-end"><small>₱{{ "%.2f"|format(comm.order_amount) }}</small></td>
+                            <td class="text-center"><small>{{ "%.1f"|format(comm.commission_rate) }}%</small></td>
+                            <td class="text-end"><strong><small>₱{{ "%.2f"|format(comm.commission_amount) }}</small></strong></td>
+                            <td class="text-center">
+                                <span class="badge bg-{% if comm.status == 'collected' %}success{% else %}warning{% endif %} badge-sm">
+                                    {{ comm.status|title }}
+                                </span>
+                            </td>
+                            <td><small class="text-muted">{{ comm.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+</style>
+{% endblock %}

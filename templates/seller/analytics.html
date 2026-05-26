@@ -1,0 +1,763 @@
+{% extends "seller/base.html" %}
+
+{% block page_title %}Analytics{% endblock %}
+{% block page_subtitle %}Track your sales performance and insights{% endblock %}
+
+{% block seller_content %}
+<!-- Notifications Banner -->
+{% if unread_notifications > 0 %}
+<div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+    <i class="fas fa-bell me-2"></i>
+    <strong>{{ unread_notifications }} New Notification{{ 's' if unread_notifications != 1 else '' }}!</strong>
+    <a href="{{ url_for('notification_center') }}" class="alert-link ms-2">View All</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="container-fluid py-4">
+
+    <!-- Modern Analytics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-primary">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>₱{{ "%.2f"|format(monthly_revenue[-1].revenue if monthly_revenue else 0) }}</h3>
+                    <p>This Month</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-warning">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_orders }}</h3>
+                    <p>Total Orders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-info">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_products }}</h3>
+                    <p>Products Listed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-success">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "%.1f"|format((monthly_revenue[-1].revenue / monthly_revenue[-2].revenue * 100 - 100) if monthly_revenue|length > 1 and monthly_revenue[-2].revenue > 0 else 0) }}%</h3>
+                    <p>Growth Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Activity Chart -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>Real-Time Activity (Last 30 Days)
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success">
+                            <i class="fas fa-circle pulse-dot me-1"></i>Live
+                        </span>
+                        <small class="text-muted">Updates every 5 seconds</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="realtimeChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Monthly Revenue Chart -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-area text-primary me-2"></i>Monthly Revenue
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Distribution -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Category Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Performance Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table text-primary me-2"></i>Category Performance
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Products</th>
+                                    <th>Total Value</th>
+                                    <th>Avg. Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in category_stats %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ stat.category }}</span>
+                                    </td>
+                                    <td><strong>{{ stat.count }}</strong></td>
+                                    <td><strong>₱{{ "%.2f"|format(stat.total_value) }}</strong></td>
+                                    <td>₱{{ "%.2f"|format(stat.total_value / stat.count if stat.count > 0 else 0) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_styles %}
+<style>
+/* Page Background - Match Dashboard */
+.page-content {
+    background: #f8f9fc !important;
+    min-height: 100vh !important;
+}
+
+.container-fluid {
+    background: #f8f9fc !important;
+    min-height: 100vh !important;
+}
+
+/* Stat Cards - Clean White Design (Match Dashboard) */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-right: 1.25rem;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: #2c3e50;
+}
+
+.stat-content p {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.stat-content small {
+    font-size: 0.85rem;
+    display: block;
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.pulse-dot {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Floating animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Modern Analytics Styles */
+.modern-stat-card {
+    background: white !important;
+    border-radius: 16px !important;
+    padding: 28px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: none !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.modern-stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+}
+
+.stat-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+    position: relative;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.stat-icon-wrapper::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 18px;
+    background: inherit;
+    filter: blur(8px);
+    opacity: 0.5;
+    z-index: -1;
+}
+
+.stat-icon-wrapper.red {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+}
+
+.stat-icon-wrapper.orange {
+    background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+}
+
+.stat-icon-wrapper.blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon-wrapper.purple {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-details {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #718096;
+    margin: 6px 0 0 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Modern Chart Cards */
+.modern-chart-card {
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+    border: none !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+}
+
+.modern-chart-card:hover {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+    transform: translateY(-2px);
+}
+
+.chart-header {
+    padding: 24px 28px !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%) !important;
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    letter-spacing: -0.3px;
+}
+
+.chart-title i {
+    color: #667eea;
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.chart-body {
+    padding: 28px !important;
+    background: white !important;
+}
+
+/* Badge Styles */
+.badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+/* Modern Table */
+.modern-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table thead {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.modern-table thead th {
+    padding: 18px 24px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    position: relative;
+}
+
+.modern-table thead th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.modern-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.modern-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.modern-table tbody td {
+    padding: 18px 24px;
+    font-size: 14px;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.modern-table tbody td strong {
+    color: #2d3748;
+    font-weight: 700;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #e6f2ff 0%, #d0e7ff 100%);
+    color: #0066cc;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.15);
+    transition: all 0.2s ease;
+}
+
+.category-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.25);
+}
+
+/* Page Header Enhancement */
+.d-flex.justify-content-between.align-items-center.mb-4 h1 {
+    font-weight: 800;
+    background: linear-gradient(135deg, #2d3748 0%, #667eea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.d-flex.justify-content-between.align-items-center.mb-4 p {
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modern-stat-card {
+        padding: 20px !important;
+        gap: 16px !important;
+    }
+    
+    .stat-icon-wrapper {
+        width: 56px;
+        height: 56px;
+        font-size: 24px;
+    }
+    
+    .stat-value {
+        font-size: 26px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+    .chart-body {
+        padding: 20px !important;
+    }
+    
+    .chart-header {
+        padding: 20px !important;
+    }
+    
+    .modern-table thead th,
+    .modern-table tbody td {
+        padding: 14px 16px;
+        font-size: 13px;
+    }
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+</style>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Real-Time Activity Chart
+const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
+
+// Generate last 30 days labels
+const last30Days = [];
+const today = new Date();
+for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    last30Days.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
+}
+
+const initialData = Array(30).fill(0);
+
+const realtimeChart = new Chart(realtimeCtx, {
+    type: 'line',
+    data: {
+        labels: last30Days,
+        datasets: [{
+            label: 'Orders',
+            data: initialData,
+            borderColor: '#4299e1',
+            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#4299e1',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                padding: 12,
+                borderRadius: 8,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return 'Orders: ' + context.parsed.y;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: true,
+                    color: '#f0f0f0',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#718096',
+                    font: { size: 10 },
+                    maxRotation: 0,
+                    autoSkip: true,
+                    maxTicksLimit: 15
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#f0f0f0',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#718096',
+                    font: { size: 11 },
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+
+// Function to fetch real-time data
+async function updateRealtimeData() {
+    try {
+        const response = await fetch('/seller/analytics/realtime-data');
+        const data = await response.json();
+        
+        if (data.success) {
+            realtimeChart.data.datasets[0].data = data.orders_per_day;
+            realtimeChart.update('none');
+        }
+    } catch (error) {
+        console.error('Error fetching real-time data:', error);
+    }
+}
+
+// Update every 5 seconds
+setInterval(updateRealtimeData, 5000);
+updateRealtimeData();
+
+// Monthly Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+const revenueData = {{ monthly_revenue | tojson }};
+
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: revenueData.map(item => item.month),
+        datasets: [{
+            label: 'Revenue',
+            data: revenueData.map(item => item.revenue),
+            borderColor: '#4299e1',
+            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#4299e1',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                padding: 12,
+                borderRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return '₱' + context.parsed.y.toFixed(2);
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: '#f0f0f0', drawBorder: false },
+                ticks: { color: '#718096' }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#f0f0f0', drawBorder: false },
+                ticks: {
+                    color: '#718096',
+                    callback: function(value) {
+                        return '₱' + value.toFixed(0);
+                    }
+                }
+            }
+        }
+    }
+});
+
+
+// Category Distribution Chart
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+const categoryData = {{ category_stats | tojson }};
+
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: categoryData.map(item => item.category),
+        datasets: [{
+            data: categoryData.map(item => item.count),
+            backgroundColor: [
+                '#4299e1',
+                '#48bb78',
+                '#ed8936',
+                '#9f7aea',
+                '#f56565',
+                '#38b2ac'
+            ],
+            borderWidth: 0,
+            hoverOffset: 8
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 16,
+                    font: { size: 12 },
+                    color: '#4a5568',
+                    usePointStyle: true
+                }
+            },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                padding: 12,
+                borderRadius: 8
+            }
+        },
+        cutout: '65%'
+    }
+});
+</script>
+{% endblock %}

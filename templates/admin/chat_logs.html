@@ -1,0 +1,375 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-shield-alt me-2 text-primary"></i>Chat Moderation
+            </h1>
+            <p class="text-muted mb-0">Monitor and moderate platform conversations</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Conversations</h6>
+                            <h3 class="mb-0 text-primary">{{ stats.total_conversations }}</h3>
+                        </div>
+                        <i class="fas fa-comments fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Active</h6>
+                            <h3 class="mb-0 text-success">{{ stats.active_conversations }}</h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Restricted</h6>
+                            <h3 class="mb-0 text-danger">{{ stats.restricted_conversations }}</h3>
+                        </div>
+                        <i class="fas fa-ban fa-2x text-danger opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Messages</h6>
+                            <h3 class="mb-0 text-info">{{ stats.total_messages }}</h3>
+                        </div>
+                        <i class="fas fa-envelope fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('admin_chat_logs') }}" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Search Users</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search by username..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <a href="{{ url_for('admin_chat_logs') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Conversations List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>All Conversations
+                <span class="badge bg-primary">{{ conversations.total }} total</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if conversations.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Participants</th>
+                            <th>Context</th>
+                            <th>Messages</th>
+                            <th>Last Activity</th>
+                            <th>Status</th>
+                            <th width="200">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conv in conversations.items %}
+                        <tr {% if conv.is_restricted %}class="table-danger"{% endif %}>
+                            <td><strong>#{{ conv.id }}</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center mb-1">
+                                    {% if conv.participant1.profile_image %}
+                                    <img src="{{ conv.participant1.profile_image }}" 
+                                         class="rounded-circle me-2" width="30" height="30" 
+                                         style="object-fit: cover;" 
+                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="rounded-circle bg-primary text-white align-items-center justify-content-center me-2" 
+                                         style="width: 30px; height: 30px; font-size: 12px; display: none;">
+                                        {{ conv.participant1.username[0].upper() }}
+                                    </div>
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 30px; height: 30px; font-size: 12px;">
+                                        {{ conv.participant1.username[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{{ url_for('view_user_details', user_id=conv.participant1.id) }}" class="text-decoration-none" target="_blank">
+                                            <strong class="text-primary">{{ conv.participant1.username }}</strong>
+                                        </a>
+                                        <br><small class="badge bg-secondary">{{ conv.participant1.role }}</small>
+                                    </div>
+                                </div>
+                                <div class="text-center my-1">
+                                    <i class="fas fa-exchange-alt text-muted"></i>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    {% if conv.participant2.profile_image %}
+                                    <img src="{{ conv.participant2.profile_image }}" 
+                                         class="rounded-circle me-2" width="30" height="30" 
+                                         style="object-fit: cover;" 
+                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="rounded-circle bg-success text-white align-items-center justify-content-center me-2" 
+                                         style="width: 30px; height: 30px; font-size: 12px; display: none;">
+                                        {{ conv.participant2.username[0].upper() }}
+                                    </div>
+                                    {% else %}
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 30px; height: 30px; font-size: 12px;">
+                                        {{ conv.participant2.username[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{{ url_for('view_user_details', user_id=conv.participant2.id) }}" class="text-decoration-none" target="_blank">
+                                            <strong class="text-primary">{{ conv.participant2.username }}</strong>
+                                        </a>
+                                        <br><small class="badge bg-secondary">{{ conv.participant2.role }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if conv.product %}
+                                <small class="badge bg-info">
+                                    <i class="fas fa-box me-1"></i>Product
+                                </small>
+                                <br><small>{{ conv.product.name[:30] }}...</small>
+                                {% elif conv.order %}
+                                <small class="badge bg-warning text-dark">
+                                    <i class="fas fa-shopping-cart me-1"></i>Order
+                                </small>
+                                <br><small>#{{ conv.order.order_number }}</small>
+                                {% else %}
+                                <small class="text-muted">General</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ conv.messages.count() }}</span>
+                            </td>
+                            <td>
+                                <small>{{ conv.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </td>
+                            <td>
+                                {% if conv.is_restricted %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-ban me-1"></i>Restricted
+                                </span>
+                                {% elif conv.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Active
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-archive me-1"></i>Inactive
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if conv.is_restricted %}
+                                <button class="btn btn-sm btn-success unrestrict-btn" 
+                                        data-conversation-id="{{ conv.id }}" title="Remove Restriction">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-danger restrict-btn" 
+                                        data-conversation-id="{{ conv.id }}" title="Restrict Conversation">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if conv.is_restricted and conv.restriction_reason %}
+                        <tr class="table-light">
+                            <td colspan="7" class="ps-5">
+                                <small class="text-danger">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Restriction Reason:</strong> {{ conv.restriction_reason }}
+                                    {% if conv.restrictor %}
+                                    <span class="text-muted ms-2">(By: {{ conv.restrictor.username }})</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if conversations.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Conversation pagination">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if not conversations.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin_chat_logs', page=conversations.prev_num, search=search_query) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        
+                        {% for page_num in conversations.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == conversations.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('admin_chat_logs', page=page_num, search=search_query) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if not conversations.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin_chat_logs', page=conversations.next_num, search=search_query) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                <p class="text-muted">No conversations found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Restrict Conversation Modal -->
+<div class="modal fade" id="restrictModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Restrict Conversation</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to restrict this conversation. Both participants will be notified and unable to send new messages.</p>
+                <div class="mb-3">
+                    <label for="restrictionReason" class="form-label">Restriction Reason <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="restrictionReason" rows="3" 
+                              placeholder="Enter reason for restriction..." required></textarea>
+                    <small class="text-muted">This reason will be visible to both participants.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRestrictBtn">Restrict Conversation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentConversationId = null;
+
+// Restrict conversation
+document.querySelectorAll('.restrict-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentConversationId = this.dataset.conversationId;
+        new bootstrap.Modal(document.getElementById('restrictModal')).show();
+    });
+});
+
+// Confirm restriction
+document.getElementById('confirmRestrictBtn')?.addEventListener('click', function() {
+    const reason = document.getElementById('restrictionReason').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a restriction reason.');
+        return;
+    }
+    
+    fetch(`/admin/chat/restrict/${currentConversationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to restrict conversation');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+});
+
+// Unrestrict conversation
+document.querySelectorAll('.unrestrict-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const conversationId = this.dataset.conversationId;
+        
+        if (confirm('Remove restriction from this conversation?')) {
+            fetch(`/admin/chat/unrestrict/${conversationId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to unrestrict conversation');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

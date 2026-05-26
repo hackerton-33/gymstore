@@ -1,0 +1,277 @@
+{% extends "seller/base.html" %}
+
+{% block page_title %}Orders{% endblock %}
+{% block page_subtitle %}Manage customer orders and shipments{% endblock %}
+
+{% block seller_content %}
+<!-- Orders Table -->
+<div class="card">
+    <div class="card-body">
+        {% if orders.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ order.order_number }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ order.buyer.first_name }} {{ order.buyer.last_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ order.buyer.email }}</small>
+                                <br>
+                                <button onclick="openChatWidget({{ order.buyer.id }})" class="btn btn-sm btn-outline-primary mt-1">
+                                    <i class="fas fa-comment-dots me-1"></i>Message
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% for item in order.order_items %}
+                                {% if item.product.seller_id == current_user.id %}
+                                    <div class="order-item">
+                                        {{ item.product.name }} (x{{ item.quantity }})
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>₱{{ "%.2f"|format(order.total_amount) }}
+                        </td>
+                        <td>
+                            {% set status_colors = {
+                                'pending': 'warning',
+                                'confirmed': 'success',
+                                'preparing': 'info',
+                                'for_pickup': 'primary',
+                                'picked_up': 'cyan',
+                                'on_the_way': 'indigo',
+                                'delivered': 'teal',
+                                'completed': 'dark',
+                                'cancelled': 'danger',
+                                'refunded': 'secondary'
+                            } %}
+                            {% set status_icons = {
+                                'pending': '🟡',
+                                'confirmed': '🟢',
+                                'preparing': '🟠',
+                                'for_pickup': '🚚',
+                                'picked_up': '📦',
+                                'on_the_way': '🚗',
+                                'delivered': '📬',
+                                'completed': '✅',
+                                'cancelled': '❌',
+                                'refunded': '💰'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                {{ status_icons.get(order.status, '') }} {{ order.status.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' if order.payment_status == 'pending' else 'danger' }}">
+                                {{ order.payment_status.title() }}
+                            </span>
+                        </td>
+                        <td>{{ order.created_at.strftime('%m/%d/%Y') }}</td>
+                        <td>
+                            {% if order.status in ['cancelled', 'refunded', 'completed', 'delivered'] %}
+                                <div class="text-muted">
+                                    <small>
+                                        {% if order.status == 'cancelled' %}
+                                            <i class="fas fa-times-circle me-1"></i>Order Cancelled
+                                            {% if order.cancellation_reason %}
+                                                <br><em>{{ order.cancellation_reason }}</em>
+                                            {% endif %}
+                                        {% elif order.status == 'refunded' %}
+                                            <i class="fas fa-undo me-1"></i>Order Refunded
+                                        {% elif order.status == 'completed' %}
+                                            <i class="fas fa-check-circle text-success me-1"></i>✅ Order Completed
+                                            <br><small class="text-success">Payment Released</small>
+                                        {% elif order.status == 'delivered' %}
+                                            <i class="fas fa-box-open text-info me-1"></i>📬 Delivered
+                                            <br><small class="text-muted">Waiting for buyer confirmation</small>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            {% else %}
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                        Update Status
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <!-- Pending → Confirmed -->
+                                        {% if order.status == 'pending' %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}" class="d-inline">
+                                                <input type="hidden" name="status" value="confirmed">
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="fas fa-check-circle text-success me-2"></i>✅ Confirm Order
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        
+                                        <!-- Confirmed → Preparing -->
+                                        {% if order.status == 'confirmed' %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}" class="d-inline">
+                                                <input type="hidden" name="status" value="preparing">
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="fas fa-box-open text-info me-2"></i>📦 Start Preparing
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        
+                                        <!-- Preparing → For Pickup -->
+                                        {% if order.status == 'preparing' %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}" class="d-inline">
+                                                <input type="hidden" name="status" value="for_pickup">
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="fas fa-truck text-primary me-2"></i>🚚 Ready for Pickup
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        
+                                        <!-- Cancel Option (before pickup) -->
+                                        {% if order.status in ['pending', 'confirmed', 'preparing'] %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}" class="d-inline">
+                                                <input type="hidden" name="status" value="cancelled">
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="fas fa-times-circle me-2"></i>❌ Cancel Order
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        
+                                        <!-- After pickup, only riders can update -->
+                                        {% if order.status in ['for_pickup', 'picked_up', 'on_the_way'] %}
+                                        <li>
+                                            <span class="dropdown-item text-muted">
+                                                <i class="fas fa-info-circle me-2"></i>Rider will update status
+                                            </span>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if orders.pages > 1 %}
+        <nav aria-label="Orders pagination">
+            <ul class="pagination justify-content-center pagination-minimal">
+                {% if orders.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('seller_orders', page=orders.prev_num) }}">&lt;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&lt;</span>
+                </li>
+                {% endif %}
+                
+                <li class="page-item">
+                    <span class="page-link page-number">{{ orders.page }}</span>
+                </li>
+                
+                {% if orders.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('seller_orders', page=orders.next_num) }}">&gt;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&gt;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No orders yet</h5>
+            <p class="text-muted">Orders from customers will appear here once they start purchasing your products.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Minimalist Pagination Styles */
+.pagination-minimal .page-link {
+    border: none;
+    background: transparent;
+    color: #333;
+    font-size: 2rem;
+    padding: 1rem 2rem;
+    margin: 0 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    min-width: 80px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-minimal .page-link:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.pagination-minimal .page-item.disabled .page-link {
+    color: #ccc;
+    background: transparent;
+}
+
+.pagination-minimal .page-number {
+    color: #333;
+    font-weight: 600;
+    background: transparent !important;
+    cursor: default;
+}
+</style>
+
+<script>
+function openChatWidget(userId) {
+    // Open the chat widget
+    if (typeof toggleChatWidget === 'function') {
+        // Check if widget is already open
+        const widget = document.getElementById('chat-widget');
+        if (widget && widget.style.display === 'none') {
+            toggleChatWidget();
+        }
+        
+        // Wait a bit for the widget to open, then open the conversation
+        setTimeout(function() {
+            if (typeof openConversation === 'function') {
+                openConversation(userId);
+            }
+        }, 300);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Account Pending Approval - Gym Store{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-body text-center p-5">
+                    <i class="fas fa-clock fa-5x text-warning mb-4"></i>
+                    <h2 class="mb-3">Account Pending Approval</h2>
+                    <p class="text-muted mb-4">
+                        Your rider account is currently under review by our admin team.
+                        You will receive an email notification once your account is approved.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>What's Next?</strong><br>
+                        Our team will verify your documents and credentials. This usually takes 1-2 business days.
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('rider_profile') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-user me-1"></i>View Profile
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

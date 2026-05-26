@@ -1,0 +1,291 @@
+{% extends "rider/base.html" %}
+
+{% block title %}My Profile - Rider Dashboard{% endblock %}
+
+{% block rider_content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user me-2 text-primary"></i>My Profile
+        </h1>
+        <p class="text-muted mb-0">Manage your profile and settings</p>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Profile Form -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-id-card me-2"></i>Personal Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" 
+                                       value="{{ rider.username }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" 
+                                       value="{{ rider.email }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" name="phone_number" class="form-control" 
+                                       value="{{ rider.phone or '' }}" placeholder="+1234567890">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Address</label>
+                                <input type="text" name="address" class="form-control" 
+                                       value="{{ rider.address or '' }}" placeholder="Your address">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Profile Image</label>
+                            <input type="file" name="profile_image" class="form-control" accept="image/*">
+                            {% if rider.profile_image %}
+                            <small class="text-muted">Current image: {{ rider.profile_image }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">ID/License Document</label>
+                            <input type="file" name="id_document" class="form-control" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="text-muted">Upload your driver's license or ID card for verification</small>
+                            {% if rider.id_document %}
+                            <div class="mt-2">
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle"></i> Document uploaded: 
+                                    <a href="{{ rider.id_document }}" target="_blank" class="text-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>View Document
+                                    </a>
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <div class="input-group">
+                                <input type="password" id="currentPassword" class="form-control" required>
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('currentPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" id="newPassword" class="form-control" 
+                                       minlength="6" required>
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('newPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <input type="password" id="confirmPassword" class="form-control" 
+                                       minlength="6" required>
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('confirmPassword')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-key me-1"></i>Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Stats & Info -->
+        <div class="col-lg-4">
+            <!-- Profile Picture -->
+            <div class="card shadow mb-4">
+                <div class="card-body text-center">
+                    {% if rider.profile_image %}
+                    <img src="{{ rider.profile_image }}" 
+                         class="rounded-circle mb-3" width="120" height="120" alt="Profile" style="object-fit: cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 120px; height: 120px; font-size: 3rem;">
+                        {{ rider.username[0].upper() }}
+                    </div>
+                    {% endif %}
+                    <h5>{{ rider.username }}</h5>
+                    <p class="text-muted">{{ rider.email }}</p>
+                    <span class="badge bg-{% if rider.approval_status == 'approved' %}success{% elif rider.approval_status == 'rejected' %}danger{% else %}warning{% endif %} mb-2">
+                        {% if rider.approval_status == 'approved' %}
+                        <i class="fas fa-check-circle"></i> Verified Rider
+                        {% elif rider.approval_status == 'rejected' %}
+                        <i class="fas fa-times-circle"></i> Application Rejected
+                        {% else %}
+                        <i class="fas fa-clock"></i> Pending Verification
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Performance Stats -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-trophy me-2"></i>Performance Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Total Deliveries</span>
+                            <strong>{{ total_deliveries }}</strong>
+                        </div>
+                        <div class="progress">
+                            {% set delivery_percent = (total_deliveries * 2) if (total_deliveries * 2) <= 100 else 100 %}
+                            <div class="progress-bar bg-success" style="width: {{ delivery_percent }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Total Earnings</span>
+                            <strong>₱{{ "%.2f"|format(total_earnings) }}</strong>
+                        </div>
+                        <div class="progress">
+                            {% set earnings_percent = (total_earnings / 10) if (total_earnings / 10) <= 100 else 100 %}
+                            <div class="progress-bar bg-info" style="width: {{ earnings_percent }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Rider Level</span>
+                            <strong>
+                                {% if total_deliveries < 10 %}
+                                <span class="badge bg-secondary">Beginner</span>
+                                {% elif total_deliveries < 50 %}
+                                <span class="badge bg-primary">Intermediate</span>
+                                {% elif total_deliveries < 100 %}
+                                <span class="badge bg-warning">Advanced</span>
+                                {% else %}
+                                <span class="badge bg-success">Expert</span>
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-link me-2"></i>Quick Links
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('rider_earnings') }}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-dollar-sign me-1"></i>View Earnings
+                    </a>
+                    <a href="{{ url_for('rider_orders') }}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-clipboard-list me-1"></i>My Orders
+                    </a>
+                    <a href="{{ url_for('rider_complaints') }}" class="btn btn-outline-warning w-100">
+                        <i class="fas fa-exclamation-circle me-1"></i>Submit Complaint
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.back-button {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    transform: translateX(-3px);
+}
+
+@media (max-width: 576px) {
+    .back-button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+    .back-text {
+        display: none;
+    }
+}
+</style>
+
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = event.target.closest('button').querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+    
+    if (newPass !== confirmPass) {
+        alert('New passwords do not match!');
+        return;
+    }
+    
+    // TODO: Implement password change API
+    alert('Password change functionality will be implemented soon!');
+});
+</script>
+{% endblock %}

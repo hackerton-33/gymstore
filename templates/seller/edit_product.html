@@ -1,0 +1,222 @@
+{% extends "seller/base.html" %}
+
+{% block page_title %}Edit Product{% endblock %}
+{% block page_subtitle %}Update product information{% endblock %}
+
+{% block seller_content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Product</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <!-- Main Product Image -->
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Main Product Image</label>
+                        {% if product.image_url %}
+                        <div class="mb-2">
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 200px; border: 2px solid #e9ecef;">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" onchange="previewMainImage(event)">
+                        <small class="form-text text-muted">Upload new image to replace current one (JPG, PNG - Max 5MB)</small>
+                        
+                        <!-- Main Image Preview -->
+                        <div id="mainImagePreview" class="mt-3" style="display: none;">
+                            <img id="mainImagePreviewImg" src="" alt="Main Image Preview" class="img-fluid rounded" style="max-height: 200px; border: 2px solid #e9ecef;">
+                        </div>
+                    </div>
+
+                    <!-- Gallery Images -->
+                    <div class="mb-4">
+                        <label class="form-label">Product Gallery</label>
+                        
+                        <!-- Existing Gallery Images -->
+                        {% if product.gallery_images %}
+                        <div class="mb-3">
+                            <p class="small text-muted mb-2">Current Gallery Images:</p>
+                            <div class="row g-2">
+                                {% set gallery = product.gallery_images if product.gallery_images is string else product.gallery_images %}
+                                {% if gallery is string %}
+                                    {% set gallery = gallery|from_json %}
+                                {% endif %}
+                                {% for img in gallery %}
+                                <div class="col-4 col-md-3 col-lg-2">
+                                    <img src="{{ img }}" alt="Gallery Image" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover; border: 2px solid #e9ecef;">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Upload New Gallery Images -->
+                        <label for="gallery_images" class="form-label small">Upload New Gallery Images</label>
+                        <input type="file" class="form-control" id="gallery_images" name="gallery_images" accept="image/*" multiple onchange="previewGalleryImages(event)">
+                        <small class="form-text text-muted">Upload up to 5 additional images (JPG, PNG - Max 5MB each). New images will replace existing gallery.</small>
+                        
+                        <!-- Gallery Images Preview -->
+                        <div id="galleryPreview" class="row g-2 mt-3" style="display: none;">
+                            <!-- Gallery previews will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="brand" class="form-label">Brand</label>
+                                <input type="text" class="form-control" id="brand" name="brand" value="{{ product.brand or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price ($) *</label>
+                                <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ product.price }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="stock" class="form-label">Stock Quantity *</label>
+                                <input type="number" class="form-control" id="stock" name="stock" min="0" value="{{ product.stock_quantity }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="weight" class="form-label">Weight (lbs)</label>
+                                <input type="number" class="form-control" id="weight" name="weight" step="0.1" min="0" value="{{ product.weight or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dimensions" class="form-label">Dimensions</label>
+                                <input type="text" class="form-control" id="dimensions" name="dimensions" value="{{ product.dimensions or '' }}" placeholder="e.g., 15\" x 8\" x 6\"">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('seller_products') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+// Preview Main Image
+function previewMainImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image size must be less than 5MB');
+            event.target.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('mainImagePreview').style.display = 'block';
+            document.getElementById('mainImagePreviewImg').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Preview Gallery Images
+function previewGalleryImages(event) {
+    const files = event.target.files;
+    const galleryPreview = document.getElementById('galleryPreview');
+    
+    // Clear previous previews
+    galleryPreview.innerHTML = '';
+    
+    if (files.length > 5) {
+        alert('You can upload a maximum of 5 additional images');
+        event.target.value = '';
+        return;
+    }
+    
+    if (files.length > 0) {
+        galleryPreview.style.display = 'flex';
+        
+        Array.from(files).forEach((file, index) => {
+            // Validate file size
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`Image ${index + 1} size must be less than 5MB`);
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-4 col-md-3 col-lg-2';
+                col.innerHTML = `
+                    <div class="position-relative">
+                        <img src="${e.target.result}" alt="Gallery Image ${index + 1}" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover; border: 2px solid #e9ecef;">
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" onclick="removeGalleryImage(${index})" style="padding: 0.25rem 0.5rem;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                galleryPreview.appendChild(col);
+            };
+            reader.readAsDataURL(file);
+        });
+    } else {
+        galleryPreview.style.display = 'none';
+    }
+}
+
+// Remove Gallery Image
+function removeGalleryImage(index) {
+    const input = document.getElementById('gallery_images');
+    const dt = new DataTransfer();
+    const files = input.files;
+    
+    for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+            dt.items.add(files[i]);
+        }
+    }
+    
+    input.files = dt.files;
+    previewGalleryImages({ target: input });
+}
+</script>
+{% endblock %}

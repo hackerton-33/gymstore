@@ -1,0 +1,1356 @@
+{% extends "buyer/base.html" %}
+
+{% block buyer_content %}
+<!-- Hero Section with Video Background -->
+<div class="about-hero-section">
+    <!-- Video Background -->
+    <div class="video-background">
+        <video autoplay muted loop playsinline id="heroVideo">
+            <source src="https://media.istockphoto.com/id/1511331762/video/set-of-equipment-for-fitness-and-physical-education-dumbbells-leg-weights-fitness-roller.mp4?s=mp4-640x640-is&k=20&c=AVH4ytDFHjP5OKTDgbnO_MgDK38GyGWWCMToiWwHbC8=" type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+    
+    <div class="container">
+        <div class="row align-items-center justify-content-center min-vh-50">
+            <div class="col-lg-8 text-center text-white hero-content">
+                <h1 class="display-3 fw-bold mb-4 animate-fade-in">About Daily Fitness</h1>
+                <p class="lead mb-4 animate-fade-in-delay-1">Your trusted partner in fitness excellence since 2020</p>
+                <p class="mb-4 animate-fade-in-delay-2">Empowering thousands of fitness enthusiasts worldwide with premium equipment, expert guidance, and unwavering support.</p>
+                <div class="animate-fade-in-delay-3">
+                    <a href="{{ url_for('buyer_shop') }}" class="btn btn-light btn-lg me-3 mb-2">
+                        <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                    </a>
+                    <a href="#contact" class="btn btn-outline-light btn-lg mb-2">
+                        <i class="fas fa-envelope me-2"></i>Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-wave">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+        </svg>
+    </div>
+</div>
+
+<div class="container py-5" style="background: #f8f9fa;">
+    
+    <!-- Our Story with Timeline -->
+    <div class="row mb-5 section-animate">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-danger mb-3 px-4 py-2">Our Journey</span>
+            <h2 class="display-5 fw-bold mb-3">The Story Behind Daily Fitness</h2>
+            <p class="lead text-muted">From a small team to a global fitness community</p>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="story-card h-100">
+                <div class="story-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <h3 class="h4 mb-3">The Beginning</h3>
+                <p class="lead">Founded by fitness enthusiasts, Daily Fitness was born from a simple belief: everyone deserves access to high-quality gym equipment and supplements.</p>
+                <p>We started as a small team of personal trainers and fitness experts who were frustrated by the lack of reliable, affordable equipment for our clients. Our passion for fitness and commitment to quality drove us to create something better.</p>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="story-card h-100">
+                <div class="story-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h3 class="h4 mb-3">Today & Beyond</h3>
+                <p class="lead">Today, we've grown into a comprehensive platform that serves thousands of fitness enthusiasts worldwide.</p>
+                <p>Our mission is to empower your fitness journey by providing premium equipment, expert advice, and exceptional service that helps you achieve your goals. We're not just a store - we're your fitness partner.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mb-5 section-animate">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-success mb-3 px-4 py-2">Why Choose Us</span>
+            <h2 class="display-5 fw-bold mb-3">What Makes Us Different</h2>
+            <p class="lead text-muted">Premium features designed for your success</p>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="feature-card text-center h-100">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-shipping-fast feature-icon"></i>
+                </div>
+                <h4 class="h5 mb-3">Fast Delivery</h4>
+                <p class="text-muted">Get your equipment delivered quickly with our reliable shipping partners. Track your order in real-time.</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="feature-card text-center h-100">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-shield-alt feature-icon"></i>
+                </div>
+                <h4 class="h5 mb-3">Secure Payments</h4>
+                <p class="text-muted">Shop with confidence using our encrypted payment system. Your data is always protected.</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="feature-card text-center h-100">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-undo feature-icon"></i>
+                </div>
+                <h4 class="h5 mb-3">Easy Returns</h4>
+                <p class="text-muted">Not satisfied? Return products within 30 days for a full refund. No questions asked.</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="feature-card text-center h-100">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-headset feature-icon"></i>
+                </div>
+                <h4 class="h5 mb-3">24/7 Support</h4>
+                <p class="text-muted">Our expert team is always here to help. Chat, call, or email us anytime.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Our Values with Modern Cards -->
+    <div class="row mb-5 section-animate">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-warning text-dark mb-3 px-4 py-2">Core Values</span>
+            <h2 class="display-5 fw-bold mb-3">What We Stand For</h2>
+            <p class="lead text-muted">The principles that guide everything we do</p>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="value-card-modern">
+                <div class="value-icon-modern quality">
+                    <i class="fas fa-medal"></i>
+                </div>
+                <h4 class="mb-3">Quality First</h4>
+                <p class="text-muted mb-3">We only stock equipment and supplements from trusted brands that meet our rigorous quality standards.</p>
+                <ul class="value-list">
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Certified products</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Quality guarantee</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Authentic brands</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="value-card-modern">
+                <div class="value-icon-modern support">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h4 class="mb-3">Expert Support</h4>
+                <p class="text-muted mb-3">Our team of certified trainers and nutritionists is here to help you choose the right products for your goals.</p>
+                <ul class="value-list">
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Certified trainers</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Nutrition experts</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Personal guidance</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="value-card-modern">
+                <div class="value-icon-modern community">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h4 class="mb-3">Community Focus</h4>
+                <p class="text-muted mb-3">We're more than just a store - we're a community of fitness enthusiasts supporting each other's journeys.</p>
+                <ul class="value-list">
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Active community</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Fitness events</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Member rewards</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team Section with Modern Cards -->
+    <div class="row mb-5 section-animate">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-primary mb-3 px-4 py-2">Our Team</span>
+            <h2 class="display-5 fw-bold mb-3">Meet The Experts</h2>
+            <p class="lead text-muted">Passionate professionals dedicated to your fitness success</p>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="team-card-modern">
+                <div class="team-avatar-modern">
+                    <img src="{{ url_for('static', filename='images/team/member1.jpg') }}" alt="Adrien Nielle Rosel" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="fas fa-user-circle" style="display: none;"></i>
+                    <div class="team-badge">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                </div>
+                <div class="team-content">
+                    <h5 class="mb-1">Adrien Nielle Rosel</h5>
+                    <p class="text-primary mb-2"><i class="fas fa-briefcase me-2"></i>Product Manager</p>
+                    <p class="text-muted small mb-3">Certified personal trainer with 10+ years of experience in fitness and nutrition. Specializes in strength training and sports nutrition.</p>
+                    <div class="team-social">
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="team-card-modern">
+                <div class="team-avatar-modern">
+                    <img src="{{ url_for('static', filename='images/team/member2.jpg') }}" alt="Daniel Peñalosa" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="fas fa-user-circle" style="display: none;"></i>
+                    <div class="team-badge">
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="team-content">
+                    <h5 class="mb-1">Daniel Peñalosa</h5>
+                    <p class="text-primary mb-2"><i class="fas fa-briefcase me-2"></i>Team Leader</p>
+                    <p class="text-muted small mb-3">Former competitive bodybuilder and equipment specialist with extensive industry knowledge. Expert in fitness equipment selection and training programs.</p>
+                    <div class="team-social">
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="team-card-modern">
+                <div class="team-avatar-modern">
+                    <img src="{{ url_for('static', filename='images/team/member3.jpg') }}" alt="Richmond Gallardo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="fas fa-user-circle" style="display: none;"></i>
+                    <div class="team-badge">
+                        <i class="fas fa-code"></i>
+                    </div>
+                </div>
+                <div class="team-content">
+                    <h5 class="mb-1">Richmond Gallardo</h5>
+                    <p class="text-primary mb-2"><i class="fas fa-briefcase me-2"></i>Technical Lead</p>
+                    <p class="text-muted small mb-3">Registered dietitian and supplement expert helping customers optimize their nutrition. Specializes in sports supplements and meal planning.</p>
+                    <div class="team-social">
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="team-card-modern">
+                <div class="team-avatar-modern">
+                    <img src="{{ url_for('static', filename='images/team/member4.jpg') }}" alt="Team Member 4" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="fas fa-user-circle" style="display: none;"></i>
+                    <div class="team-badge">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="team-content">
+                    <h5 class="mb-1">Alfonso Castillo</h5>
+                    <p class="text-primary mb-2"><i class="fas fa-briefcase me-2"></i>Your Role</p>
+                    <p class="text-muted small mb-3">Add your bio here. Describe your expertise and what you bring to the team.</p>
+                    <div class="team-social">
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics with Animation -->
+    <div class="stats-section-modern mb-5 section-animate">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-card-modern">
+                        <div class="stat-icon-modern">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="stat-number" data-target="10000">0</h3>
+                        <p class="stat-label">Happy Customers</p>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-card-modern">
+                        <div class="stat-icon-modern">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <h3 class="stat-number" data-target="500">0</h3>
+                        <p class="stat-label">Premium Products</p>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-card-modern">
+                        <div class="stat-icon-modern">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h3 class="stat-number" data-target="50">0</h3>
+                        <p class="stat-label">Trusted Brands</p>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-card-modern">
+                        <div class="stat-icon-modern">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="stat-number-text">24/7</h3>
+                        <p class="stat-label">Customer Support</p>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonials Section -->
+    <div class="row mb-5 section-animate">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-danger mb-3 px-4 py-2">Testimonials</span>
+            <h2 class="display-5 fw-bold mb-3">What Our Customers Say</h2>
+            <p class="lead text-muted">Real stories from real fitness enthusiasts</p>
+        </div>
+        {% if featured_testimonials %}
+            {% for testimonial in featured_testimonials %}
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars mb-3">
+                        {% for i in range(1, 6) %}
+                            {% if i <= testimonial.review.rating %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="testimonial-text">"{{ testimonial.review.comment }}"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            {% if testimonial.review.user.profile_image %}
+                                <img src="{{ testimonial.review.user.profile_image }}" alt="{{ testimonial.review.user.full_name }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ testimonial.review.user.full_name }}</h6>
+                            <small class="text-muted">Verified Customer</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Default testimonials if none featured -->
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars mb-3">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"Best gym equipment store I've ever used! The quality is outstanding and customer service is top-notch. Highly recommended!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Sarah Johnson</h6>
+                            <small class="text-muted">Fitness Enthusiast</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars mb-3">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"Fast delivery, authentic products, and great prices. I've been buying from Daily Fitness for 2 years now. Never disappointed!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Mike Chen</h6>
+                            <small class="text-muted">Personal Trainer</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars mb-3">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"The expert advice I received helped me choose the perfect equipment for my home gym. Couldn't be happier with my purchase!"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Emily Rodriguez</h6>
+                            <small class="text-muted">Home Gym Owner</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Contact Info with Modern Design -->
+    <div class="row mb-5 section-animate" id="contact">
+        <div class="col-12 text-center mb-5">
+            <span class="badge bg-secondary mb-3 px-4 py-2">Contact Us</span>
+            <h2 class="display-5 fw-bold mb-3">Get in Touch</h2>
+            <p class="lead text-muted">We're here to help you achieve your fitness goals</p>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="contact-card-modern">
+                <div class="contact-icon-modern email">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h5 class="mb-3">Email Us</h5>
+                <p class="text-muted mb-3">Send us an email anytime</p>
+                <a href="mailto:support@dailyfitness.com" class="contact-link">support@dailyfitness.com</a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="contact-card-modern">
+                <div class="contact-icon-modern phone">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <h5 class="mb-3">Call Us</h5>
+                <p class="text-muted mb-3">Speak with our team</p>
+                <a href="tel:1-800-GYM-STORE" class="contact-link">1-800-GYM-STORE</a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="contact-card-modern">
+                <div class="contact-icon-modern clock">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h5 class="mb-3">Business Hours</h5>
+                <p class="text-muted mb-3">We're available</p>
+                <p class="contact-link mb-1">Mon-Fri: 9AM-6PM</p>
+                <p class="contact-link">Sat-Sun: 10AM-4PM</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="cta-section-modern">
+                <div class="row align-items-center">
+                    <div class="col-lg-8 mb-4 mb-lg-0">
+                        <h2 class="h3 mb-3 text-white">Ready to Start Your Fitness Journey?</h2>
+                        <p class="text-white-50 mb-0">Join thousands of satisfied customers and discover premium fitness equipment today.</p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end">
+                        <a href="{{ url_for('buyer_shop') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+/* Page Background with Pattern */
+body {
+    background: #f8f9fa !important;
+    background-image: 
+        linear-gradient(30deg, #f0f0f0 12%, transparent 12.5%, transparent 87%, #f0f0f0 87.5%, #f0f0f0),
+        linear-gradient(150deg, #f0f0f0 12%, transparent 12.5%, transparent 87%, #f0f0f0 87.5%, #f0f0f0),
+        linear-gradient(30deg, #f0f0f0 12%, transparent 12.5%, transparent 87%, #f0f0f0 87.5%, #f0f0f0),
+        linear-gradient(150deg, #f0f0f0 12%, transparent 12.5%, transparent 87%, #f0f0f0 87.5%, #f0f0f0);
+    background-size: 80px 140px;
+    background-position: 0 0, 0 0, 40px 70px, 40px 70px;
+    background-color: #f8f9fa !important;
+}
+
+/* Alternative: Fitness Icons Pattern */
+.buyer-layout::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.03;
+    background-image: 
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="40" fill="%23000">💪</text></svg>'),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="40" fill="%23000">🏋️</text></svg>'),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="40" fill="%23000">⚡</text></svg>'),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="40" fill="%23000">🎯</text></svg>');
+    background-size: 100px 100px;
+    background-position: 0 0, 50px 50px, 100px 0, 150px 50px;
+    background-repeat: repeat;
+    pointer-events: none;
+}
+
+/* Hero Section with Video Background */
+.about-hero-section {
+    position: relative;
+    overflow: hidden;
+    padding: 80px 0 120px;
+    background: #212529;
+}
+
+/* Video Background */
+.video-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.video-background video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+}
+
+/* Video Overlay for better text readability */
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        135deg,
+        rgba(33, 37, 41, 0.85) 0%,
+        rgba(33, 37, 41, 0.75) 50%,
+        rgba(33, 37, 41, 0.85) 100%
+    );
+    z-index: 1;
+}
+
+.min-vh-50 {
+    min-height: 50vh;
+}
+
+.about-hero-section .container {
+    position: relative;
+    z-index: 10;
+}
+
+.hero-content {
+    z-index: 10;
+    position: relative;
+}
+
+.hero-content h1,
+.hero-content p {
+    color: #ffffff !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-content .btn-light {
+    background: white;
+    color: #212529;
+    border: 2px solid white;
+    font-weight: 600;
+}
+
+.hero-content .btn-light:hover {
+    background: transparent;
+    color: white;
+    border-color: white;
+}
+
+.hero-content .btn-outline-light {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+    font-weight: 600;
+}
+
+.hero-content .btn-outline-light:hover {
+    background: white;
+    color: #212529;
+}
+
+.hero-icon-container {
+    position: relative;
+    display: inline-block;
+    z-index: 10;
+}
+
+.hero-icon {
+    font-size: 15rem;
+    color: rgba(255, 255, 255, 0.3);
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+}
+
+.hero-icon-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.hero-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    z-index: 10;
+}
+
+.hero-wave svg {
+    position: relative;
+    display: block;
+    width: calc(100% + 1.3px);
+    height: 60px;
+}
+
+.hero-wave path {
+    fill: #343a40;
+}
+
+/* Animations */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 1s ease-in;
+}
+
+.animate-fade-in-delay-1 {
+    animation: fadeIn 1s ease-in 0.2s both;
+}
+
+.animate-fade-in-delay-2 {
+    animation: fadeIn 1s ease-in 0.4s both;
+}
+
+.animate-fade-in-delay-3 {
+    animation: fadeIn 1s ease-in 0.6s both;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Section Animation */
+.section-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.section-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Story Cards */
+.story-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.story-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(220, 53, 69, 0.03) 0%, transparent 70%);
+    z-index: 0;
+}
+
+.story-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.story-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.story-card:nth-child(1) .story-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.story-card:nth-child(2) .story-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.story-icon i {
+    font-size: 2.5rem;
+    color: white;
+}
+
+/* Feature Cards */
+.feature-card {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    border-color: #dc3545;
+}
+
+.feature-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.feature-card:nth-child(1) .feature-icon-wrapper {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.feature-card:nth-child(2) .feature-icon-wrapper {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+.feature-card:nth-child(3) .feature-icon-wrapper {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+.feature-card:nth-child(4) .feature-icon-wrapper {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.feature-icon {
+    font-size: 2rem;
+    color: white;
+}
+
+/* Value Cards Modern */
+.value-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.value-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.value-icon-modern {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+    font-size: 2.5rem;
+    color: white;
+}
+
+.value-icon-modern.quality {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.value-icon-modern.support {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+.value-icon-modern.community {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.value-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.value-list li {
+    padding: 8px 0;
+    font-size: 0.95rem;
+}
+
+/* Team Cards Modern */
+.team-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    text-align: center;
+    height: 100%;
+}
+
+.team-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.team-card-modern:nth-child(1) .team-avatar-modern {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    font-size: 4rem;
+    color: white;
+}
+
+.team-card-modern:nth-child(2) .team-avatar-modern {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    font-size: 4rem;
+    color: white;
+}
+
+.team-card-modern:nth-child(3) .team-avatar-modern {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    font-size: 4rem;
+    color: white;
+}
+
+.team-card-modern:nth-child(4) .team-avatar-modern {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    font-size: 4rem;
+    color: white;
+}
+
+/* Team Avatar Image Support */
+.team-avatar-modern img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.team-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    background: #ffd700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.team-social {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Stats Section Modern */
+.stats-section-modern {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 30px;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #dee2e6;
+}
+
+.stats-section-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.02) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.02) 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+    opacity: 0.5;
+}
+
+.stat-card-modern {
+    background: white;
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 30px 20px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.stat-card-modern:hover {
+    background: white;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stat-card-modern:nth-child(1) .stat-icon-modern {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.stat-card-modern:nth-child(2) .stat-icon-modern {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.stat-card-modern:nth-child(3) .stat-icon-modern {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.stat-card-modern:nth-child(4) .stat-icon-modern {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #212529;
+    margin: 10px 0;
+}
+
+.stat-number-text {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #212529;
+    margin: 10px 0;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.stat-progress {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.stat-progress-bar {
+    height: 100%;
+    background: #212529;
+    width: 0;
+    animation: progressBar 2s ease-out forwards;
+}
+
+@keyframes progressBar {
+    to { width: 100%; }
+}
+
+/* Testimonial Cards */
+.testimonial-card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+}
+
+.testimonial-stars {
+    color: #ffd700;
+}
+
+.testimonial-text {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.8;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.testimonial-card:nth-child(1) .author-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.testimonial-card:nth-child(2) .author-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.testimonial-card:nth-child(3) .author-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+/* Contact Cards Modern */
+.contact-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    text-align: center;
+    height: 100%;
+}
+
+.contact-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.contact-icon-modern {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 25px;
+    font-size: 2.5rem;
+    color: white;
+}
+
+.contact-icon-modern.email {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+.contact-icon-modern.phone {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+.contact-icon-modern.clock {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.contact-link {
+    color: #212529;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.contact-link:hover {
+    color: #dc3545;
+}
+
+/* CTA Section */
+.cta-section-modern {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 30px;
+    padding: 60px 50px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    border: 2px solid #dee2e6;
+    position: relative;
+    overflow: hidden;
+}
+
+.cta-section-modern::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(220, 53, 69, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.cta-section-modern::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    right: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(13, 110, 253, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.cta-section-modern > * {
+    position: relative;
+    z-index: 1;
+}
+
+.cta-section-modern h2,
+.cta-section-modern p {
+    color: #212529 !important;
+}
+
+.cta-section-modern .btn-light {
+    background: #212529;
+    color: white;
+    border: 2px solid #212529;
+}
+
+.cta-section-modern .btn-light:hover {
+    background: white;
+    color: #212529;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-icon {
+        font-size: 8rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+    }
+    
+    .about-hero-section {
+        padding: 60px 0 80px;
+    }
+    
+    .video-background video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+}
+</style>
+
+<script>
+// Intersection Observer for section animations
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = document.querySelectorAll('.section-animate');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    
+    sections.forEach(section => {
+        observer.observe(section);
+    });
+    
+    // Animated counters with real-time counting
+    const counters = document.querySelectorAll('.stat-number');
+    let hasAnimated = false;
+    
+    const animateCounter = (counter) => {
+        const target = +counter.getAttribute('data-target');
+        const duration = 2000; // 2 seconds animation
+        const increment = target / (duration / 16); // 60fps
+        let current = 0;
+        
+        const updateCounter = () => {
+            current += increment;
+            if (current < target) {
+                counter.innerText = Math.floor(current).toLocaleString();
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.innerText = target.toLocaleString() + '+';
+            }
+        };
+        
+        updateCounter();
+    };
+    
+    const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !hasAnimated) {
+                hasAnimated = true;
+                counters.forEach(counter => {
+                    animateCounter(counter);
+                });
+                // Animate progress bars
+                document.querySelectorAll('.stat-progress-bar').forEach(bar => {
+                    bar.style.width = '100%';
+                });
+            }
+        });
+    }, {
+        threshold: 0.3
+    });
+    
+    // Observe the stats section
+    const statsSection = document.querySelector('.stats-section-modern');
+    if (statsSection) {
+        counterObserver.observe(statsSection);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Reviews Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ total_reviews }}</h3>
+                    <small class="text-muted">Total Reviews</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ five_star }}</h3>
+                    <small class="text-muted">5 Stars</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ four_star }}</h3>
+                    <small class="text-muted">4 Stars</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ three_star }}</h3>
+                    <small class="text-muted">3 Stars</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ two_star }}</h3>
+                    <small class="text-muted">2 Stars</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ one_star }}</h3>
+                    <small class="text-muted">1 Star</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Filter by Rating</label>
+                    <select name="rating" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Ratings</option>
+                        <option value="5" {% if rating_filter == 5 %}selected{% endif %}>5 Stars</option>
+                        <option value="4" {% if rating_filter == 4 %}selected{% endif %}>4 Stars</option>
+                        <option value="3" {% if rating_filter == 3 %}selected{% endif %}>3 Stars</option>
+                        <option value="2" {% if rating_filter == 2 %}selected{% endif %}>2 Stars</option>
+                        <option value="1" {% if rating_filter == 1 %}selected{% endif %}>1 Star</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reviews Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-star me-2"></i>Customer Reviews</h5>
+        </div>
+        <div class="card-body">
+            {% if reviews.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Product</th>
+                                <th>Rating</th>
+                                <th>Review</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in reviews.items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if review.user.profile_image %}
+                                            <img src="{{ review.user.profile_image }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                {{ review.user.first_name[0] }}
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ review.user.full_name }}</strong><br>
+                                            <small class="text-muted">{{ review.user.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('product_detail', product_id=review.product.id) }}" target="_blank">
+                                        {{ review.product.name[:40] }}{% if review.product.name|length > 40 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="rating">
+                                        {% for i in range(1, 6) %}
+                                            {% if i <= review.rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-muted"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="max-width: 300px;">
+                                        {{ review.comment[:100] }}{% if review.comment|length > 100 %}...{% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ review.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('admin_delete_review', review_id=review.id) }}" onsubmit="return confirm('Delete this review?')">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if reviews.pages > 1 %}
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        {% if reviews.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_reviews', page=reviews.prev_num, rating=rating_filter) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in reviews.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == reviews.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('admin_reviews', page=page_num, rating=rating_filter) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reviews.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_reviews', page=reviews.next_num, rating=rating_filter) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No reviews found</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

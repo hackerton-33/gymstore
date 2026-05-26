@@ -1,0 +1,569 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-users me-2 text-primary"></i>User Management
+            </h1>
+            <p class="text-muted mb-0">Manage all platform users and their accounts</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a href="{{ url_for('admin_approvals') }}" class="btn btn-outline-warning btn-sm">
+                <i class="fas fa-user-check me-1"></i>Pending Approvals
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <!-- Search Bar -->
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search Users</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Name, email, username...">
+                        </div>
+                        
+                        <!-- Role Filter -->
+                        <div class="col-md-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select" id="role" name="role">
+                                <option value="all" {{ 'selected' if current_role == 'all' else '' }}>All Roles</option>
+                                <option value="buyer" {{ 'selected' if current_role == 'buyer' else '' }}>Buyers</option>
+                                <option value="seller" {{ 'selected' if current_role == 'seller' else '' }}>Sellers</option>
+                                <option value="rider" {{ 'selected' if current_role == 'rider' else '' }}>Riders</option>
+                                <option value="admin" {{ 'selected' if current_role == 'admin' else '' }}>Admins</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Status Filter -->
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="all" {{ 'selected' if current_status == 'all' else '' }}>All Status</option>
+                                <option value="pending" {{ 'selected' if current_status == 'pending' else '' }}>Pending</option>
+                                <option value="approved" {{ 'selected' if current_status == 'approved' else '' }}>Approved</option>
+                                <option value="rejected" {{ 'selected' if current_status == 'rejected' else '' }}>Rejected</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Filter Button -->
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Filter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Users List
+                {% if current_role != 'all' or current_status != 'all' or search %}
+                <small class="text-muted">
+                    (Filtered: 
+                    {% if current_role != 'all' %}{{ current_role.title() }}{% endif %}
+                    {% if current_status != 'all' %}{{ current_status.title() }}{% endif %}
+                    {% if search %}"{{ search }}"{% endif %}
+                    )
+                </small>
+                {% endif %}
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            {% if users.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Registration Date</th>
+                            <th>Last Active</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if user.profile_image %}
+                                    <img src="{{ user.profile_image }}" alt="Profile" 
+                                         class="rounded-circle me-3" width="40" height="40"
+                                         style="object-fit: cover;" 
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%234e73df%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2218%22 font-weight=%22bold%22%3E{{ user.first_name[0] if user.first_name else 'U' }}%3C/text%3E%3C/svg%3E';">
+                                    {% else %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <span class="text-white fw-bold">{{ user.first_name[0] if user.first_name else 'U' }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ user.first_name }} {{ user.last_name }}</div>
+                                        <div class="text-muted small">{{ user.email }}</div>
+                                        {% if user.role == 'seller' and user.business_name %}
+                                        <div class="text-muted small">{{ user.business_name }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-shield-alt me-1"></i>Admin
+                                </span>
+                                {% elif user.role == 'seller' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-store me-1"></i>Seller
+                                </span>
+                                {% elif user.role == 'rider' %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-motorcycle me-1"></i>Rider
+                                </span>
+                                {% else %}
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-user me-1"></i>Buyer
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.approval_status == 'approved' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Approved
+                                </span>
+                                {% elif user.approval_status == 'pending' %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                                {% elif user.approval_status == 'rejected' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times me-1"></i>Rejected
+                                </span>
+                                {% endif %}
+                                
+                                {% if not user.is_active %}
+                                <span class="badge bg-secondary ms-1">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.created_at.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                <small>{{ user.last_login.strftime('%b %d, %Y') }}</small>
+                                {% else %}
+                                <small class="text-muted">Never</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('view_user_details', user_id=user.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    {% if user.approval_status == 'pending' %}
+                                    <button class="btn btn-outline-success btn-sm approve-btn" 
+                                            data-user-id="{{ user.id }}" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm reject-btn" 
+                                            data-user-id="{{ user.id }}" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if user.role != 'admin' %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if user.is_active %}
+                                            <li><a class="dropdown-item suspend-btn" href="#" data-user-id="{{ user.id }}">
+                                                <i class="fas fa-ban me-2"></i>Suspend User
+                                            </a></li>
+                                            {% else %}
+                                            <li><a class="dropdown-item activate-btn" href="#" data-user-id="{{ user.id }}">
+                                                <i class="fas fa-check me-2"></i>Activate User
+                                            </a></li>
+                                            {% endif %}
+                                            <li><a class="dropdown-item warning-btn" href="#" data-user-id="{{ user.id }}">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>Send Warning
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger delete-btn" href="#" data-user-id="{{ user.id }}">
+                                                <i class="fas fa-trash me-2"></i>Delete User
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if users.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Users pagination">
+                    <ul class="pagination justify-content-center mb-0 pagination-minimal">
+                        {% if users.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_users', page=users.prev_num, role=current_role, status=current_status, search=search) }}">&lt;</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&lt;</span>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item">
+                            <span class="page-link page-number">{{ users.page }}</span>
+                        </li>
+                        
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_users', page=users.next_num, role=current_role, status=current_status, search=search) }}">&gt;</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&gt;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No users found</h5>
+                <p class="text-muted">
+                    {% if search or current_role != 'all' or current_status != 'all' %}
+                    Try adjusting your filters or search criteria.
+                    {% else %}
+                    No users have been registered yet.
+                    {% endif %}
+                </p>
+                {% if search or current_role != 'all' or current_status != 'all' %}
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Warning Modal -->
+<div class="modal fade" id="warningModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark py-2">
+                <h6 class="modal-title mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Send Warning</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <input type="hidden" id="warningUserId">
+                <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm" id="warningTitle" placeholder="Warning title" required>
+                </div>
+                <div class="mb-2">
+                    <select class="form-select form-select-sm" id="warningCategory" required>
+                        <option value="general">General Warning</option>
+                        <option value="policy_violation">Policy Violation</option>
+                        <option value="spam">Spam/Inappropriate Content</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <textarea class="form-control form-control-sm" id="warningMessage" rows="3" placeholder="Warning message..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer p-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-warning" onclick="submitWarning()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for approve buttons
+    document.querySelectorAll('.approve-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            approveUser(userId);
+        });
+    });
+    
+    // Add event listeners for reject buttons
+    document.querySelectorAll('.reject-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            rejectUser(userId);
+        });
+    });
+    
+    // Add event listeners for suspend buttons
+    document.querySelectorAll('.suspend-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userId = this.getAttribute('data-user-id');
+            suspendUser(userId);
+        });
+    });
+    
+    // Add event listeners for activate buttons
+    document.querySelectorAll('.activate-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userId = this.getAttribute('data-user-id');
+            activateUser(userId);
+        });
+    });
+    
+    // Add event listeners for warning buttons
+    document.querySelectorAll('.warning-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userId = this.getAttribute('data-user-id');
+            sendWarning(userId);
+        });
+    });
+    
+    // Add event listeners for delete buttons
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userId = this.getAttribute('data-user-id');
+            deleteUser(userId);
+        });
+    });
+});
+
+function approveUser(userId) {
+    if (confirm('Are you sure you want to approve this user?')) {
+        fetch(`/admin/approve/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error approving user. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error approving user. Please try again.');
+        });
+    }
+}
+
+function rejectUser(userId) {
+    if (confirm('Are you sure you want to reject this user?')) {
+        fetch(`/admin/reject/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error rejecting user. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error rejecting user. Please try again.');
+        });
+    }
+}
+
+function suspendUser(userId) {
+    const reason = prompt('Enter reason for suspension (optional):');
+    if (reason !== null) {  // User didn't cancel
+        if (confirm('Are you sure you want to ban/suspend this user? They will not be able to log in.')) {
+            fetch(`/admin/user/${userId}/toggle-ban`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reason: reason || 'No reason provided' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error suspending user. Please try again.');
+            });
+        }
+    }
+}
+
+function activateUser(userId) {
+    if (confirm('Are you sure you want to activate/unban this user? They will be able to log in again.')) {
+        fetch(`/admin/user/${userId}/toggle-ban`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: 'Account reactivated by admin' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error activating user. Please try again.');
+        });
+    }
+}
+
+function sendWarning(userId) {
+    // Show the warning modal
+    document.getElementById('warningUserId').value = userId;
+    document.getElementById('warningTitle').value = 'Warning from Administrator';
+    document.getElementById('warningMessage').value = '';
+    document.getElementById('warningCategory').value = 'general';
+    
+    const modal = new bootstrap.Modal(document.getElementById('warningModal'));
+    modal.show();
+}
+
+function submitWarning() {
+    const userId = document.getElementById('warningUserId').value;
+    const title = document.getElementById('warningTitle').value.trim();
+    const message = document.getElementById('warningMessage').value.trim();
+    const category = document.getElementById('warningCategory').value;
+    
+    if (!title) {
+        alert('Please enter a warning title');
+        return;
+    }
+    
+    if (!message) {
+        alert('Please enter a warning message');
+        return;
+    }
+    
+    fetch(`/admin/user/${userId}/send-warning`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            message: message,
+            category: category,
+            priority: 'high'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('warningModal'));
+            modal.hide();
+            
+            alert('✓ ' + data.message + '\n\nThe user will receive:\n• In-app notification\n• Email notification');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending warning. Please try again.');
+    });
+}
+
+function deleteUser(userId) {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        // TODO: Implement delete user functionality
+        alert('Delete user functionality will be implemented.');
+    }
+}
+</script>
+
+<style>
+/* Minimalist Pagination Styles */
+.pagination-minimal .page-link {
+    border: none;
+    background: transparent;
+    color: #333;
+    font-size: 2rem;
+    padding: 1rem 2rem;
+    margin: 0 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    min-width: 80px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-minimal .page-link:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.pagination-minimal .page-item.disabled .page-link {
+    color: #ccc;
+    background: transparent;
+}
+
+.pagination-minimal .page-number {
+    color: #333;
+    font-weight: 600;
+    background: transparent !important;
+    cursor: default;
+}
+</style>
+{% endblock %}

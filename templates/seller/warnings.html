@@ -1,0 +1,461 @@
+{% extends "seller/base.html" %}
+
+{% block page_title %}Warnings & Violations{% endblock %}
+{% block page_subtitle %}Review and respond to admin warnings{% endblock %}
+
+{% block seller_content %}
+<!-- Warning Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_warnings }}</h3>
+                <p>Total Warnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-danger">
+                <i class="fas fa-bell text-white"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ unread_warnings }}</h3>
+                <p>Unread Warnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-dark">
+                <i class="fas fa-exclamation-circle text-white"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ critical_warnings }}</h3>
+                <p>Critical Warnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success">
+                <i class="fas fa-check-circle text-white"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ resolved_warnings }}</h3>
+                <p>Resolved</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('seller_warnings', status='all') }}" 
+               class="btn btn-sm {{ 'btn-primary' if current_status == 'all' else 'btn-outline-primary' }}">
+                All Warnings
+            </a>
+            <a href="{{ url_for('seller_warnings', status='unread') }}" 
+               class="btn btn-sm {{ 'btn-danger' if current_status == 'unread' else 'btn-outline-danger' }}">
+                Unread ({{ unread_warnings }})
+            </a>
+            <a href="{{ url_for('seller_warnings', status='critical') }}" 
+               class="btn btn-sm {{ 'btn-dark' if current_status == 'critical' else 'btn-outline-dark' }}">
+                Critical ({{ critical_warnings }})
+            </a>
+            <a href="{{ url_for('seller_warnings', status='acknowledged') }}" 
+               class="btn btn-sm {{ 'btn-info' if current_status == 'acknowledged' else 'btn-outline-info' }}">
+                Acknowledged
+            </a>
+            <a href="{{ url_for('seller_warnings', status='resolved') }}" 
+               class="btn btn-sm {{ 'btn-success' if current_status == 'resolved' else 'btn-outline-success' }}">
+                Resolved
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Warnings List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Warnings & Violations
+        </h5>
+        <span class="badge bg-primary">{{ warnings.total }} warning{{ 's' if warnings.total != 1 else '' }}</span>
+    </div>
+    <div class="card-body">
+        {% if warnings.items %}
+            {% for warning in warnings.items %}
+            <div class="warning-card mb-4 p-4 border rounded-3 
+                        {% if warning.priority in ['critical', 'urgent'] %}border-danger bg-danger bg-opacity-10
+                        {% elif warning.priority == 'high' %}border-warning bg-warning bg-opacity-10
+                        {% elif not warning.is_read %}border-info bg-info bg-opacity-10
+                        {% else %}border-light{% endif %}">
+                
+                <!-- Warning Header -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h5 class="mb-0">
+                                {% if warning.priority in ['critical', 'urgent'] %}
+                                    <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                                {% elif warning.priority == 'high' %}
+                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle text-info me-2"></i>
+                                {% endif %}
+                                {{ warning.title }}
+                            </h5>
+                            
+                            <!-- Priority Badge -->
+                            <span class="badge bg-{% if warning.priority in ['critical', 'urgent'] %}danger{% elif warning.priority == 'high' %}warning{% else %}info{% endif %}">
+                                {{ warning.priority.title() if warning.priority else 'Medium' }}
+                            </span>
+                            
+                            <!-- Warning Type Badge -->
+                            <span class="badge bg-secondary">
+                                {{ warning.type.replace('_', ' ').title() if warning.type == 'seller_warning' else 'Admin Warning' }}
+                            </span>
+                            
+                            <!-- Offense Level Badge (if available) -->
+                            {% if warning.offense_level %}
+                            <span class="badge bg-dark">
+                                Offense Level {{ warning.offense_level }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if not warning.is_read %}
+                                <span class="badge bg-danger">Unread</span>
+                            {% endif %}
+                            
+                            {% if warning.is_resolved %}
+                                <span class="badge bg-success">Resolved</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <i class="fas fa-user me-1"></i>
+                            Issued by: System Administrator
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-calendar me-1"></i>
+                            {{ warning.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        {% if not warning.is_read %}
+                            <button class="btn btn-sm btn-primary acknowledge-btn" 
+                                    data-warning-id="{{ warning.id }}" 
+                                    data-warning-type="{{ warning.type }}">
+                                <i class="fas fa-check me-1"></i>Acknowledge
+                            </button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-secondary toggle-details-btn" data-warning-id="{{ warning.id }}">
+                            <i class="fas fa-eye me-1"></i>Details
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Warning Content -->
+                <div class="warning-content">
+                    <div class="mb-3">
+                        <strong>Category:</strong> {{ warning.category.replace('_', ' ').title() if warning.category else 'General' }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Details:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ warning.message|safe }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expandable Details -->
+                <div id="warning-details-{{ warning.id }}" class="warning-details mt-3" style="display: none;">
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <strong>Warning Information:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><i class="fas fa-tag me-2"></i><strong>Type:</strong> {{ warning.type.replace('_', ' ').title() }}</li>
+                            <li><i class="fas fa-folder me-2"></i><strong>Category:</strong> {{ warning.category.replace('_', ' ').title() if warning.category else 'General' }}</li>
+                            <li><i class="fas fa-flag me-2"></i><strong>Priority:</strong> {{ warning.priority.title() if warning.priority else 'Medium' }}</li>
+                            <li><i class="fas fa-calendar-alt me-2"></i><strong>Date:</strong> {{ warning.created_at.strftime('%B %d, %Y at %I:%M %p') }}</li>
+                            <li><i class="fas fa-check-circle me-2"></i><strong>Status:</strong> 
+                                {% if warning.is_resolved %}
+                                    <span class="text-success">Resolved</span>
+                                {% elif warning.is_read %}
+                                    <span class="text-info">Acknowledged</span>
+                                {% else %}
+                                    <span class="text-danger">Unread</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    {% if warning.type == 'notification_warning' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> This warning was sent directly by an administrator. 
+                        Please review the details carefully and take appropriate action.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if warnings.pages > 1 %}
+            <nav aria-label="Warnings pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if warnings.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('seller_warnings', page=warnings.prev_num, status=current_status) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in warnings.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != warnings.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('seller_warnings', page=page_num, status=current_status) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if warnings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('seller_warnings', page=warnings.next_num, status=current_status) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                <h4>No Warnings Found</h4>
+                <p class="text-muted">
+                    {% if current_status == 'all' %}
+                        You have no warnings or violations. Keep up the good work!
+                    {% else %}
+                        No warnings found for the selected filter.
+                    {% endif %}
+                </p>
+                {% if current_status != 'all' %}
+                <a href="{{ url_for('seller_warnings') }}" class="btn btn-outline-primary">
+                    View All Warnings
+                </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Warning Types Insights -->
+{% if warning_types %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-pie me-2"></i>
+            Warning Categories
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for warning_type, count in warning_types %}
+            <div class="col-md-4 mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <strong>{{ warning_type.replace('_', ' ').title() }}</strong>
+                    </div>
+                    <span class="badge bg-secondary">{{ count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.warning-card {
+    transition: all 0.3s ease;
+}
+
+.warning-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.warning-details {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Event delegation for acknowledge buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.acknowledge-btn')) {
+            const warningId = e.target.closest('.acknowledge-btn').dataset.warningId;
+            acknowledgeWarning(warningId);
+        }
+        
+        if (e.target.closest('.toggle-details-btn')) {
+            const warningId = e.target.closest('.toggle-details-btn').dataset.warningId;
+            toggleWarningDetails(warningId);
+        }
+    });
+    
+    // Event delegation for form submissions
+    document.addEventListener('submit', function(e) {
+        if (e.target.classList.contains('warning-response-form')) {
+            e.preventDefault();
+            const warningId = e.target.dataset.warningId;
+            submitWarningResponse(e, warningId);
+        }
+    });
+});
+
+function toggleWarningDetails(warningId) {
+    const details = document.getElementById(`warning-details-${warningId}`);
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+    } else {
+        details.style.display = 'none';
+    }
+}
+
+function acknowledgeWarning(warningId) {
+    const button = event.target.closest('.acknowledge-btn');
+    const warningType = button.dataset.warningType;
+    
+    if (confirm('Are you sure you want to acknowledge this warning?')) {
+        // For notification warnings, mark as read
+        if (warningType === 'notification_warning') {
+            fetch(`/api/notifications/${warningId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error acknowledging warning: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while acknowledging the warning.');
+            });
+        } else {
+            // For seller warnings, use the existing route
+            fetch(`/seller/warnings/${warningId}/acknowledge`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error acknowledging warning: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while acknowledging the warning.');
+            });
+        }
+    }
+}
+
+function submitWarningResponse(event, warningId) {
+    event.preventDefault();
+    
+    const responseText = document.getElementById(`response-${warningId}`).value.trim();
+    if (!responseText) {
+        alert('Please enter a response before submitting.');
+        return;
+    }
+    
+    fetch(`/seller/warnings/${warningId}/respond`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            response: responseText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error submitting response: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting your response.');
+    });
+}
+</script>
+{% endblock %}

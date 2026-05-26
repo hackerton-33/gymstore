@@ -1,0 +1,276 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Testimonials Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Featured Testimonials Management</h5>
+                    <span class="badge bg-info">{{ featured_testimonials|length }}/3 Featured</span>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Featured Testimonials -->
+                    <h6 class="mb-3">Currently Featured (Displayed on About Us page)</h6>
+                    {% if featured_testimonials %}
+                        <div class="row mb-4" id="featured-testimonials">
+                            {% for testimonial in featured_testimonials %}
+                            <div class="col-md-4 mb-3" data-id="{{ testimonial.id }}">
+                                <div class="card border-{{ 'success' if testimonial.is_active else 'secondary' }}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="testimonial-stars">
+                                                {% for i in range(1, 6) %}
+                                                    {% if i <= testimonial.review.rating %}         
+                                               <i class="fas fa-star text-warning"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star text-muted"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <span class="badge bg-{{ 'success' if testimonial.is_active else 'secondary' }}">
+                                                {{ 'Active' if testimonial.is_active else 'Inactive' }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="card-text small">\"{{ testimonial.review.comment[:100] }}{% if testimonial.review.comment|length > 100 %}...{% endif %}\"</p>
+                                        
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="me-2">
+                                                {% if testimonial.review.user.profile_image %}
+                                                    <img src="{{ testimonial.review.user.profile_image }}" alt="{{ testimonial.review.user.full_name }}" 
+                                                         class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                                         style="width: 30px; height: 30px;">
+                                                        <i class="fas fa-user text-white small"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <small class="fw-bold">{{ testimonial.review.user.full_name }}</small><br>
+                                                <small class="text-muted">Order #{{ testimonial.review.order_id if testimonial.review.order_id else 'N/A' }}</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <form method="POST" action="{{ url_for('admin_toggle_testimonial', testimonial_id=testimonial.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-{{ 'warning' if testimonial.is_active else 'success' }}">
+                                                    <i class="fas fa-{{ 'pause' if testimonial.is_active else 'play' }}"></i>
+                                                    {{ 'Deactivate' if testimonial.is_active else 'Activate' }}
+                                                </button>
+                                            </form>
+                                            
+                                            <form method="POST" action="{{ url_for('admin_remove_testimonial', testimonial_id=testimonial.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Remove this testimonial?')">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i> Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                        
+                                        <div class="mt-2">
+                                            <small class="text-muted">Display Order: {{ testimonial.display_order }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if featured_testimonials|length > 1 %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Tip:</strong> Drag and drop the cards above to reorder them. The order will be saved automatically.
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            No testimonials are currently featured. Select from the available reviews below.
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <!-- Available Reviews -->
+                    <h6 class="mb-3">Available 5-Star Reviews</h6>
+                    {% if available_reviews %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Rating</th>
+                                        <th>Review</th>
+                                        <th>Product</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for review in available_reviews %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if review.user.profile_image %}
+                                                    <img src="{{ review.user.profile_image }}" alt="{{ review.user.full_name }}" 
+                                                         class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                         style="width: 30px; height: 30px;">
+                                                        <i class="fas fa-user text-white small"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <div class="fw-bold">{{ review.user.full_name }}</div>
+                                                    <small class="text-muted">{{ review.user.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="testimonial-stars">
+                                                {% for i in range(1, 6) %}
+                                                    {% if i <= review.rating %}
+                                                        <i class="fas fa-star text-warning"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star text-muted"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="review-text" style="max-width: 300px;">
+                                                \"{{ review.comment[:100] }}{% if review.comment|length > 100 %}...{% endif %}\"
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('product_detail', product_id=review.product.id) }}" 
+                                               class="text-decoration-none" target="_blank">
+                                                {{ review.product.name[:30] }}{% if review.product.name|length > 30 %}...{% endif %}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <small>{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if featured_testimonials|length < 3 %}
+                                                <form method="POST" action="{{ url_for('admin_add_testimonial') }}" class="d-inline">
+                                                    <input type="hidden" name="review_id" value="{{ review.id }}">
+                                                    <input type="hidden" name="display_order" value="{{ featured_testimonials|length }}">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-plus"></i> Feature
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-secondary" disabled title="Maximum 3 testimonials allowed">
+                                                    <i class="fas fa-ban"></i> Full
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            No 5-star reviews available to feature. Encourage customers to leave reviews!
+                        </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Drag and Drop JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const featuredContainer = document.getElementById('featured-testimonials');
+    
+    if (featuredContainer && featuredContainer.children.length > 1) {
+        const sortable = Sortable.create(featuredContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                // Get new order
+                const items = Array.from(featuredContainer.children);
+                const orderData = items.map((item, index) => ({
+                    id: parseInt(item.dataset.id),
+                    order: index
+                }));
+                
+                // Send to server
+                fetch('{{ url_for("admin_reorder_testimonials") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Order updated successfully!',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error updating order: ' + data.message
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error updating order'
+                    });
+                });
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.sortable-ghost {
+    opacity: 0.5;
+}
+
+.card {
+    cursor: move;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.review-text {
+    font-style: italic;
+    color: #666;
+}
+
+.testimonial-stars {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

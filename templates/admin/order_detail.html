@@ -1,0 +1,293 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-file-invoice me-2 text-primary"></i>Order #{{ order.order_number }}
+            </h1>
+            <p class="text-muted mb-0">Order details and management</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Back to Orders
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Order Information -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order Number:</strong></p>
+                            <p>#{{ order.order_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order Date:</strong></p>
+                            <p>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status:</strong></p>
+                            <p>
+                                {% if order.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif order.status == 'confirmed' %}
+                                <span class="badge bg-info">Confirmed</span>
+                                {% elif order.status == 'on_delivery' %}
+                                <span class="badge bg-primary">On Delivery</span>
+                                {% elif order.status == 'delivered' %}
+                                <span class="badge bg-success">Delivered</span>
+                                {% elif order.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Payment Status:</strong></p>
+                            <p>
+                                {% if order.payment_status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                                {% elif order.payment_status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ order.payment_status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Payment Method:</strong></p>
+                            <p>{{ order.payment_method|replace('_', ' ')|title }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Total Amount:</strong></p>
+                            <p class="h5 text-primary">₱{{ "%.2f"|format(order.total_amount) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Seller</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.order_items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image_url %}
+                                            <img src="{{ url_for('static', filename=item.product.image_url) }}" 
+                                                 class="rounded me-2" width="50" height="50" alt="" style="object-fit: cover;">
+                                            {% endif %}
+                                            <div>{{ item.product.name }}</div>
+                                        </div>
+                                    </td>
+                                    <td>{{ item.product.seller.business_name or item.product.seller.username }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">₱{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td class="text-end"><strong>₱{{ "%.2f"|format(item.total_price) }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td class="text-end">₱{{ "%.2f"|format(order.subtotal) }}</td>
+                                </tr>
+                                {% if order.tax_amount > 0 %}
+                                <tr>
+                                    <td colspan="4" class="text-end">Tax:</td>
+                                    <td class="text-end">₱{{ "%.2f"|format(order.tax_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if order.shipping_amount > 0 %}
+                                <tr>
+                                    <td colspan="4" class="text-end">Shipping:</td>
+                                    <td class="text-end">₱{{ "%.2f"|format(order.shipping_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if order.discount_amount > 0 %}
+                                <tr>
+                                    <td colspan="4" class="text-end text-success">Discount:</td>
+                                    <td class="text-end text-success">-{{ "%.2f"|format(order.discount_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-active">
+                                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                    <td class="text-end"><strong>₱{{ "%.2f"|format(order.total_amount) }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Shipping Address:</strong></p>
+                    <p>{{ order.shipping_address }}</p>
+                    {% if order.notes %}
+                    <p class="mb-1"><strong>Order Notes:</strong></p>
+                    <p class="text-muted">{{ order.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Actions -->
+        <div class="col-lg-4">
+            <!-- Update Status -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Admin Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Note:</strong> Sellers manage order preparation, riders manage delivery. 
+                            Admins handle special cases only.
+                        </small>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin_update_order_status', order_id=order.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Admin Status Actions</label>
+                            <select name="status" class="form-select" required>
+                                <option value="">Select action...</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancel Order</option>
+                                <option value="refunded" {% if order.status == 'refunded' %}selected{% endif %}>Refund Order</option>
+                                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Mark as Completed</option>
+                            </select>
+                            <small class="text-muted">Only special administrative actions are available</small>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Execute Admin Action
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Rider Assignment -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Rider Assignment</h5>
+                </div>
+                <div class="card-body">
+                    {% if order.rider %}
+                    <div class="alert alert-success">
+                        <p class="mb-1"><strong>Current Rider:</strong></p>
+                        <p class="mb-0">{{ order.rider.full_name }}</p>
+                        <small class="text-muted">{{ order.rider.email }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if rider_assignment %}
+                    <div class="mb-3">
+                        <p class="mb-1"><strong>Assignment Status:</strong></p>
+                        <span class="badge bg-info">{{ rider_assignment.status|replace('_', ' ')|title }}</span>
+                        {% if rider_assignment.notes %}
+                        <p class="mt-2 mb-0"><small><strong>Notes:</strong> {{ rider_assignment.notes }}</small></p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('admin_assign_rider', order_id=order.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Select Rider</label>
+                            <select name="rider_id" class="form-select" required>
+                                <option value="">Choose a rider...</option>
+                                {% for rider in available_riders %}
+                                <option value="{{ rider.id }}" {% if order.rider_id == rider.id %}selected{% endif %}>
+                                    {{ rider.full_name }} ({{ rider.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="Special instructions for the rider..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user-check me-1"></i>Assign Rider
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Buyer Information -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Buyer Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if order.buyer.profile_image %}
+                        <img src="{{ url_for('static', filename=order.buyer.profile_image) }}" 
+                             class="rounded-circle me-3" width="60" height="60" alt="">
+                        {% else %}
+                        <div class="avatar-circle bg-primary text-white me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            {{ order.buyer.first_name[0] }}{{ order.buyer.last_name[0] }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ order.buyer.full_name }}</h6>
+                            <small class="text-muted">{{ order.buyer.username }}</small>
+                        </div>
+                    </div>
+                    <p class="mb-1"><i class="fas fa-envelope me-2 text-muted"></i>{{ order.buyer.email }}</p>
+                    {% if order.buyer.phone %}
+                    <p class="mb-1"><i class="fas fa-phone me-2 text-muted"></i>{{ order.buyer.phone }}</p>
+                    {% endif %}
+                    <hr>
+                    <a href="{{ url_for('admin_user_detail', user_id=order.buyer.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-user me-1"></i>View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "rider/base.html" %}
+
+{% block title %}Earnings & Reports - Rider Dashboard{% endblock %}
+
+{% block rider_content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-dollar-sign me-2 text-success"></i>Earnings & Reports
+        </h1>
+        <p class="text-muted mb-0">Track your delivery earnings</p>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('rider_earnings') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <a href="{{ url_for('rider_earnings') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Earnings
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₱{{ "%.2f"|format(total_earnings) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Deliveries
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_deliveries }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Average per Delivery
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₱{{ "%.2f"|format(total_earnings / total_deliveries if total_deliveries > 0 else 0) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-file-export me-2"></i>Export Reports
+            </h6>
+            <div>
+                <a href="{{ url_for('rider_export_earnings', format='excel') }}?start_date={{ start_date }}&end_date={{ end_date }}" 
+                   class="btn btn-success btn-sm">
+                    <i class="fas fa-file-excel me-1"></i>Export to Excel
+                </a>
+                <a href="{{ url_for('rider_export_earnings', format='pdf') }}?start_date={{ start_date }}&end_date={{ end_date }}" 
+                   class="btn btn-danger btn-sm">
+                    <i class="fas fa-file-pdf me-1"></i>Export to PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Breakdown -->
+    {% if monthly_data %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-chart-bar me-2"></i>Monthly Breakdown
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Deliveries</th>
+                            <th>Earnings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month, data in monthly_data.items() %}
+                        <tr>
+                            <td><strong>{{ month }}</strong></td>
+                            <td>{{ data.count }}</td>
+                            <td class="text-success">₱{{ "%.2f"|format(data.earnings) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Deliveries List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Completed Deliveries
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if completed_deliveries %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Order Amount</th>
+                            <th>Your Commission</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in completed_deliveries %}
+                        <tr>
+                            <td>{{ order.updated_at.strftime('%b %d, %Y') }}</td>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.buyer.username }}</td>
+                            <td>₱{{ "%.2f"|format(order.total_amount) }}</td>
+                            <td class="text-success">
+                                <strong>₱{{ "%.2f"|format(order.total_amount|float * 0.05) }}</strong>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">No completed deliveries</h5>
+                <p class="text-muted">Complete deliveries to see your earnings here</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+</style>
+{% endblock %}

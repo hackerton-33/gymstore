@@ -1,0 +1,245 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}Order #{{ order.order_number }} - Daily Fitness{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Order Details</h2>
+        <a href="{{ url_for('buyer_orders') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order #{{ order.order_number }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order Date:</strong></p>
+                            <p>{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status:</strong></p>
+                            <p>
+                                {% if order.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% elif order.status == 'confirmed' %}
+                                <span class="badge bg-info">Confirmed</span>
+                                {% elif order.status == 'preparing' %}
+                                <span class="badge bg-primary">Preparing</span>
+                                {% elif order.status == 'for_pickup' %}
+                                <span class="badge bg-secondary">For Pickup</span>
+                                {% elif order.status == 'picked_up' %}
+                                <span class="badge bg-info">Picked Up</span>
+                                {% elif order.status == 'on_delivery' %}
+                                <span class="badge bg-primary">On Delivery</span>
+                                {% elif order.status == 'delivered' %}
+                                <span class="badge bg-success">Delivered</span>
+                                {% elif order.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address -->
+                    <div class="mb-3">
+                        <p class="mb-1"><strong>Delivery Address:</strong></p>
+                        <p class="mb-0">{{ order.delivery_address }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.order_items %}
+                    <div class="row align-items-center mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="col-md-2">
+                            {% if item.product.image_url %}
+                            <img src="{{ item.product.image_url }}" class="img-fluid rounded" alt="{{ item.product.name }}">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{{ item.product.name }}</h6>
+                            <p class="text-muted mb-1">Seller: {{ item.product.seller.business_name or item.product.seller.full_name }}</p>
+                            <small class="text-muted">Qty: {{ item.quantity }} × {{ "%.2f"|format(item.unit_price) }}</small>
+                            <div class="mt-2">
+                                <a href="{{ url_for('chat_conversation', other_user_id=item.product.seller.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-comment-dots me-1"></i>Message Seller
+                                </a>
+                                {% if order.status == 'completed' %}
+                                <button class="btn btn-sm btn-outline-primary write-review-btn ms-2" 
+                                        data-order-id="{{ order.id }}" 
+                                        data-product-id="{{ item.product_id }}" 
+                                        data-product-name="{{ item.product.name }}">
+                                    <i class="fas fa-star me-1"></i>Write a Review
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <h5 class="mb-0">₱{{ "%.2f"|format(item.total_price) }}</h5>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>₱{{ "%.2f"|format(order.total_amount) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee:</span>
+                        <span>₱{{ "%.2f"|format(order.delivery_fee or 0) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong class="text-primary">{{ "%.2f"|format(order.total_amount + (order.delivery_fee or 0)) }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            {% if order.status == 'delivered' %}
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('confirm_order_receipt', order_id=order.id) }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-2"></i>Confirm Receipt
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalTitle">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reviewOrderId">
+                <input type="hidden" id="reviewProductId">
+                <div class="mb-3">
+                    <label class="form-label">Rating</label>
+                    <select class="form-select" id="reviewRating">
+                        <option value="5">★★★★★ (5 - Excellent)</option>
+                        <option value="4">★★★★☆ (4 - Good)</option>
+                        <option value="3">★★★☆☆ (3 - Average)</option>
+                        <option value="2">★★☆☆☆ (2 - Poor)</option>
+                        <option value="1">★☆☆☆☆ (1 - Terrible)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Title (optional)</label>
+                    <input type="text" class="form-control" id="reviewTitle" placeholder="Great product!">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Your Review *</label>
+                    <textarea class="form-control" id="reviewComment" rows="4" placeholder="Share your experience with this product..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Review functionality for order detail page
+document.addEventListener('DOMContentLoaded', function() {
+    const reviewButtons = document.querySelectorAll('.write-review-btn');
+    
+    reviewButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const orderId = this.getAttribute('data-order-id');
+            const productId = this.getAttribute('data-product-id');
+            const productName = this.getAttribute('data-product-name');
+            
+            document.getElementById('reviewOrderId').value = orderId;
+            document.getElementById('reviewProductId').value = productId;
+            document.getElementById('reviewModalTitle').textContent = 'Review: ' + productName;
+            
+            document.getElementById('reviewRating').value = '5';
+            document.getElementById('reviewTitle').value = '';
+            document.getElementById('reviewComment').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+            modal.show();
+        });
+    });
+    
+    document.getElementById('submitReviewBtn').addEventListener('click', function() {
+        const orderId = document.getElementById('reviewOrderId').value;
+        const productId = document.getElementById('reviewProductId').value;
+        const rating = parseInt(document.getElementById('reviewRating').value);
+        const title = document.getElementById('reviewTitle').value;
+        const comment = document.getElementById('reviewComment').value;
+        
+        if (!comment.trim()) {
+            alert('Please write a review comment');
+            return;
+        }
+        
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_id: orderId,
+                product_id: productId,
+                rating: rating,
+                title: title,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Review submitted successfully! Thank you!');
+                bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+                setTimeout(() => location.reload(), 500);
+            } else {
+                alert(data.message || 'Failed to submit review');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to submit review. Please try again.');
+        });
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,586 @@
+{% extends "seller/base.html" %}
+
+{% block page_title %}Seller Dashboard{% endblock %}
+{% block page_subtitle %}Complete Store Management Hub{% endblock %}
+
+{% block seller_content %}
+
+<!-- Notifications Banner -->
+{% if unread_notifications > 0 %}
+<div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+    <i class="fas fa-bell me-2"></i>
+    <strong>{{ unread_notifications }} New Notification{{ 's' if unread_notifications != 1 else '' }}!</strong>
+    <a href="{{ url_for('notification_center') }}" class="alert-link ms-2">View All</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Main Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-primary">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_products }}</h3>
+                <p>Total Products</p>
+                <small class="mt-1">
+                    <span class="badge bg-success">{{ approved_products }} Approved</span>
+                    {% if pending_approval > 0 %}
+                    <span class="badge bg-warning">{{ pending_approval }} Pending</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-warning">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ pending_orders }}</h3>
+                <p>Pending Orders</p>
+                <small class="mt-1 text-muted">{{ preparing_orders }} Preparing</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ completed_orders }}</h3>
+                <p>Completed Orders</p>
+                <small class="mt-1 text-muted">{{ ready_for_pickup }} Ready for Pickup</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-info">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>₱{{ "%.2f"|format(monthly_revenue) }}</h3>
+                <p>Monthly Sales</p>
+                <small class="mt-1 text-muted">₱{{ "%.2f"|format(monthly_earnings) }} Net Earnings</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Followers & Engagement Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-purple">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_followers }}</h3>
+                <p>Total Followers</p>
+                <a href="{{ url_for('seller_followers') }}" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-eye me-1"></i>View Followers
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon text-warning">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.1f"|format(avg_rating) }}</h3>
+                <p>Average Rating</p>
+                <small class="mt-1 text-muted">{{ total_reviews }} Reviews</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Earnings & Commission Breakdown -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Earnings & Commission Breakdown
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded">
+                            <h4 class="text-primary">₱{{ "%.2f"|format(total_revenue) }}</h4>
+                            <p class="text-muted mb-0">Gross Revenue</p>
+                            <small class="text-muted">All-time sales</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded">
+                            <h4 class="text-danger">-{{ "%.2f"|format(admin_commission) }}</h4>
+                            <p class="text-muted mb-0">Admin Commission</p>
+                            <small class="text-muted">{{ (admin_commission_rate * 100)|int }}% platform fee</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-success text-white rounded">
+                            <h4>₱{{ "%.2f"|format(net_earnings) }}</h4>
+                            <p class="mb-0">Your Net Earnings</p>
+                            <small>After commission</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Payment Note:</strong> Earnings released after buyer confirms delivery or automatically after 7-10 days.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Chart & Top Products -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-area text-primary me-2"></i>Sales Performance (Last 7 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-trophy me-2"></i>Top Products (30 Days)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if top_products %}
+                <div class="list-group list-group-flush">
+                    {% for product in top_products %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ product.name[:25] }}...</div>
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-bag"></i> {{ product.total_sold }} sold
+                            </small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">{{ "%.0f"|format(product.total_revenue) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No sales data yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock & Notifications -->
+<div class="row g-4 mb-4">
+    {% if low_stock_products %}
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for product in low_stock_products %}
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 {% if not loop.last %}border-bottom{% endif %}">
+                    <div>
+                        <strong>{{ product.name }}</strong><br>
+                        <small class="text-danger">
+                            <i class="fas fa-box"></i> Only {{ product.stock_quantity }} left!
+                        </small>
+                    </div>
+                    <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i> Restock
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="col-lg-{% if low_stock_products %}6{% else %}12{% endif %}">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bell text-info me-2"></i>Recent Notifications
+                </h5>
+                <a href="{{ url_for('notification_center') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                {% for notif in notifications %}
+                <div class="mb-2 pb-2 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="mb-1">{{ notif.title }}</h6>
+                        <small class="text-muted">{{ notif.created_at.strftime('%m/%d %I:%M %p') }}</small>
+                    </div>
+                    <p class="mb-0 small text-muted">{{ notif.message }}</p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No new notifications</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('add_product') }}" class="quick-action-btn">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Add Product</span>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('seller_products') }}" class="quick-action-btn">
+                            <i class="fas fa-edit"></i>
+                            <span>Manage Products</span>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('seller_orders') }}" class="quick-action-btn">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>View Orders</span>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('seller_analytics') }}" class="quick-action-btn">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="javascript:void(0)" onclick="toggleChatWidget()" class="quick-action-btn">
+                            <i class="fas fa-comments"></i>
+                            <span>Messages</span>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('seller_profile') }}" class="quick-action-btn">
+                            <i class="fas fa-user-cog"></i>
+                            <span>Profile</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders and Reviews -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Orders</h5>
+                <a href="{{ url_for('seller_orders') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.buyer.first_name }} {{ order.buyer.last_name }}</td>
+                                <td>₱{{ "%.2f"|format(order.total_amount) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if order.status == 'pending' else 'info' if order.status == 'confirmed' else 'primary' if order.status == 'shipped' else 'success' if order.status == 'delivered' else 'danger' if order.status == 'cancelled' else 'secondary' if order.status == 'refunded' else 'info' }}">
+                                        {{ order.status.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at.strftime('%m/%d/%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No orders yet. Start selling to see orders here!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Reviews</h5>
+                <a href="{{ url_for('seller_reviews') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_reviews %}
+                    {% for review in recent_reviews %}
+                    <div class="review-item mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">{{ review.product.name }}</h6>
+                                <div class="rating">
+                                    {% for i in range(5) %}
+                                        <i class="fas fa-star {% if i < review.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ review.created_at.strftime('%m/%d/%Y') }}</small>
+                        </div>
+                        <p class="review-comment mb-1">{{ review.comment[:100] }}{% if review.comment|length > 100 %}...{% endif %}</p>
+                        <small class="text-muted">by {{ review.user.first_name }} {{ review.user.last_name }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No reviews yet. Keep selling to get customer feedback!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Rating Summary -->
+        {% if total_reviews > 0 %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Rating Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="display-4 text-warning">{{ "%.1f"|format(avg_rating) }}</div>
+                    <div class="rating mb-2">
+                        {% for i in range(5) %}
+                            <i class="fas fa-star {% if i < avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">{{ total_reviews }} review{{ 's' if total_reviews != 1 else '' }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<!-- Sales Data -->
+<script id="salesChartData" type="application/json">
+{{ sales_chart_data|tojson }}
+</script>
+
+<!-- Sales Chart Script -->
+<script>
+var salesData = JSON.parse(document.getElementById('salesChartData').textContent);
+var ctx = document.getElementById('salesChart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: salesData.map(d => d.date),
+        datasets: [{
+            label: 'Daily Revenue ($)',
+            data: salesData.map(d => d.revenue),
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.05)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#4e73df',
+            pointBorderColor: '#fff',
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Revenue: $' + context.parsed.y.toFixed(2);
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+
+<!-- Custom Styles -->
+<style>
+/* Stat Cards - Clean White Design */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-right: 1.25rem;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: #2c3e50;
+}
+
+.stat-content p {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.stat-content small {
+    font-size: 0.85rem;
+    display: block;
+}
+
+/* Custom Colors */
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: white;
+    border: 2px solid #e3e6f0;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #5a5c69;
+    transition: all 0.3s ease;
+    text-align: center;
+    height: 100px;
+}
+
+.quick-action-btn:hover {
+    border-color: #4e73df;
+    color: #4e73df;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(78, 115, 223, 0.3);
+}
+
+.quick-action-btn i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.quick-action-btn span {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Review Comment */
+.review-comment {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Purple Badge */
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+    
+    .stat-content h3 {
+        font-size: 1.75rem;
+    }
+    
+    .quick-action-btn {
+        height: 90px;
+        padding: 1rem;
+    }
+}
+</style>
+
+{% endblock %}

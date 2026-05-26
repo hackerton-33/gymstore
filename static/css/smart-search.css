@@ -1,0 +1,381 @@
+/**
+ * Smart Search Styles
+ * Clean, minimalist design for search dropdown
+ */
+
+/* ==================== SEARCH CONTAINER ==================== */
+#search-suggestions {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    max-height: 450px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 99999 !important;
+    display: none;
+    margin-top: 8px !important;
+    width: 100% !important;
+}
+
+/* ==================== SEARCH SECTIONS ==================== */
+.search-section {
+    padding: 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.search-section:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.search-section:last-child {
+    border-bottom: none;
+    border-radius: 0 0 12px 12px;
+}
+
+.search-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 10px 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    background-color: transparent;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.search-section-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-section-header i {
+    font-size: 0.875rem;
+    color: #999;
+}
+
+/* ==================== CLEAR HISTORY BUTTON ==================== */
+.btn-clear-history {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 0.75rem;
+    font-weight: 400;
+    padding: 2px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: none;
+    letter-spacing: 0;
+    border-radius: 3px;
+}
+
+.btn-clear-history:hover {
+    color: #e74a3b;
+    background: rgba(231, 74, 59, 0.08);
+}
+
+/* ==================== SEARCH RESULT ITEMS ==================== */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+    border-left: 2px solid transparent;
+}
+
+.search-result-item:hover,
+.search-result-item.active {
+    background-color: #fafafa;
+    border-left-color: #000;
+}
+
+/* ==================== PRODUCT ITEMS ==================== */
+.product-item {
+    gap: 12px !important;
+    overflow: hidden;
+}
+
+.product-item img {
+    width: 60px !important;
+    height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+    border: 1px solid #e8e8e8 !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+}
+
+.product-thumbnail {
+    width: 60px !important;
+    height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+    border: 1px solid #e8e8e8 !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+}
+
+.product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.product-brand {
+    font-weight: 500;
+}
+
+.product-category {
+    color: #999;
+}
+
+.product-price {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #000;
+}
+
+/* ==================== CATEGORY ITEMS ==================== */
+.category-item {
+    font-size: 0.9375rem;
+    color: #1a1a1a;
+}
+
+.category-item i:first-child {
+    color: #666;
+}
+
+.category-item i:last-child {
+    color: #ccc;
+    font-size: 0.75rem;
+}
+
+/* ==================== HISTORY ITEMS ==================== */
+.history-item {
+    font-size: 0.875rem;
+    color: #333;
+    font-weight: 400;
+}
+
+.history-item i {
+    color: #ccc;
+    font-size: 0.875rem;
+}
+
+/* ==================== TRENDING ITEMS ==================== */
+.trending-item {
+    font-size: 0.875rem;
+    color: #333;
+    font-weight: 400;
+}
+
+.trending-item i {
+    color: #ff6b6b;
+    font-size: 0.875rem;
+}
+
+.trending-item .badge {
+    font-size: 0.6875rem;
+    padding: 2px 6px;
+    background-color: #f5f5f5 !important;
+    color: #999 !important;
+    font-weight: 500;
+}
+
+/* ==================== RECOMMENDATION ITEMS ==================== */
+.recommendation-item {
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.recommendation-item i {
+    color: #ffc107;
+    font-size: 0.875rem;
+    margin-top: 2px;
+}
+
+.recommendation-item .flex-grow-1 {
+    flex: 1;
+}
+
+.recommendation-item .flex-grow-1 > div {
+    font-size: 0.875rem;
+    color: #333;
+    font-weight: 400;
+    margin-bottom: 2px;
+}
+
+.recommendation-item small {
+    font-size: 0.75rem;
+    color: #999;
+    display: block;
+}
+
+/* ==================== NO RESULTS ==================== */
+.search-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.search-no-results i {
+    font-size: 2rem;
+    color: #ddd;
+}
+
+.search-no-results p {
+    margin: 12px 0 4px;
+    font-size: 0.9375rem;
+    color: #666;
+}
+
+.search-no-results small {
+    font-size: 0.8125rem;
+}
+
+/* ==================== HIGHLIGHT MATCH ==================== */
+mark {
+    background-color: #fff3cd;
+    color: #000;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* ==================== SCROLLBAR ==================== */
+#search-suggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+#search-suggestions::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+#search-suggestions::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+#search-suggestions::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    #search-suggestions {
+        max-height: 400px;
+        border-radius: 0 0 4px 4px;
+    }
+    
+    .search-result-item {
+        padding: 10px 12px;
+    }
+    
+    .product-thumbnail {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .product-name {
+        font-size: 0.875rem;
+    }
+    
+    .product-meta {
+        font-size: 0.75rem;
+    }
+    
+    .product-price {
+        font-size: 0.8125rem;
+    }
+    
+    .search-section-header {
+        padding: 6px 12px;
+        font-size: 0.6875rem;
+    }
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#search-suggestions[style*="display: block"] {
+    animation: fadeIn 0.2s ease;
+}
+
+/* ==================== LOADING STATE ==================== */
+.search-loading {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+}
+
+.search-loading i {
+    font-size: 1.5rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+.search-result-item:focus {
+    outline: 2px solid #000;
+    outline-offset: -2px;
+}
+
+.search-result-item:focus-visible {
+    background-color: #f8f9fa;
+    border-left-color: #000;
+}
+
+/* ==================== PRINT ==================== */
+@media print {
+    #search-suggestions {
+        display: none !important;
+    }
+}

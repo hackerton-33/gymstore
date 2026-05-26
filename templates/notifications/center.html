@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<style>
+/* Minimalist Notification Center */
+.notification-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+.notification-header {
+    margin-bottom: 2rem;
+}
+
+.notification-header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.notification-actions button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.notification-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+    overflow-x: auto;
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.filter-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 8px;
+    transition: all 0.3s;
+    text-decoration: none;
+}
+
+.filter-tab:hover {
+    background: linear-gradient(135deg, #ffe5e8 0%, #ffd4d9 100%);
+    color: #dc3545;
+    transform: translateY(-2px);
+}
+
+.filter-tab.active {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.filter-tab .badge {
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.filter-tab.active .badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.notification-list {
+    background: white;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.notification-item {
+    padding: 1.25rem;
+    border-bottom: 1px solid #f1f3f5;
+    display: flex;
+    gap: 1rem;
+    transition: all 0.3s;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe5e8 100%);
+    transform: translateX(5px);
+}
+
+.notification-item.unread {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 4px solid #2196f3;
+}
+
+.notification-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-icon.order {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.notification-icon.financial {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.notification-icon.system {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.notification-icon.registration {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.notification-message {
+    font-size: 0.875rem;
+    color: #718096;
+    margin-bottom: 0.5rem;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #a0aec0;
+}
+
+.notification-actions-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.notification-actions-item button {
+    padding: 0.375rem 0.75rem;
+    border: none;
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.notification-actions-item button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #a0aec0;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .notification-container {
+        padding: 1rem 0.5rem;
+    }
+    
+    .notification-header h1 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<div class="notification-container">
+    <!-- Header -->
+    <div class="notification-header">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <button onclick="window.history.back()" class="btn btn-link p-0 mb-2" style="text-decoration: none; color: #718096; font-size: 0.875rem;">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </button>
+                <h1>Notifications</h1>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">{{ counts.total }} total</p>
+            </div>
+            <div class="notification-actions">
+                <button onclick="markAllAsRead()">
+                    <i class="fas fa-check-double me-1"></i>Mark all read
+                </button>
+                <button onclick="clearAllNotifications()">
+                    <i class="fas fa-trash me-1"></i>Clear all
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <a href="{{ url_for('notification_center', filter='all') }}" 
+               class="filter-tab {{ 'active' if current_filter == 'all' else '' }}">
+                All<span class="badge">{{ counts.total }}</span>
+            </a>
+            <a href="{{ url_for('notification_center', filter='unread') }}" 
+               class="filter-tab {{ 'active' if current_filter == 'unread' else '' }}">
+                Unread<span class="badge">{{ counts.unread }}</span>
+            </a>
+            <a href="{{ url_for('notification_center', filter='today') }}" 
+               class="filter-tab {{ 'active' if current_filter == 'today' else '' }}">
+                Today<span class="badge">{{ counts.today }}</span>
+            </a>
+            <a href="{{ url_for('notification_center', filter='order_update') }}" 
+               class="filter-tab {{ 'active' if current_filter == 'order_update' else '' }}">
+                Orders
+            </a>
+            <a href="{{ url_for('notification_center', filter='financial') }}" 
+               class="filter-tab {{ 'active' if current_filter == 'financial' else '' }}">
+                Financial
+            </a>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="notification-list">
+        {% if notifications.items %}
+        {% for notification in notifications.items %}
+        <div class="notification-item {{ 'unread' if not notification.is_read else '' }}" data-notification-id="{{ notification.id }}">
+            <div class="notification-icon {{ notification.type.replace('_', ' ') }}">
+                {% if notification.icon %}
+                <i class="{{ notification.icon }}"></i>
+                {% elif 'order' in notification.type.lower() %}
+                <i class="fas fa-shopping-cart"></i>
+                {% elif 'financial' in notification.type.lower() or 'payment' in notification.type.lower() %}
+                <i class="fas fa-peso-sign"></i>
+                {% elif 'system' in notification.type.lower() %}
+                <i class="fas fa-exclamation-circle"></i>
+                {% else %}
+                <i class="fas fa-bell"></i>
+                {% endif %}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">{{ notification.title }}</div>
+                <div class="notification-message">{{ notification.message }}</div>
+                <div class="notification-time">
+                    <i class="far fa-clock me-1"></i>{{ notification.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                </div>
+            </div>
+            <div class="notification-actions-item">
+                {% if notification.action_url %}
+                <a href="{{ notification.action_url }}" class="btn btn-sm btn-primary">View</a>
+                {% endif %}
+                <button onclick="markAsRead({{ notification.id }})" title="Mark as read">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button onclick="deleteNotification({{ notification.id }})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="far fa-bell-slash"></i>
+            <h4>No notifications</h4>
+            <p>You're all caught up!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if notifications.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if notifications.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('notification_center', filter=current_filter, page=notifications.prev_num) }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in notifications.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <li class="page-item {{ 'active' if page_num == notifications.page else '' }}">
+                        <a class="page-link" href="{{ url_for('notification_center', filter=current_filter, page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if notifications.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('notification_center', filter=current_filter, page=notifications.next_num) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+function markAsRead(notificationId) {
+    fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function deleteNotification(notificationId) {
+    if (confirm('Delete this notification?')) {
+        fetch(`/api/notifications/${notificationId}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function markAllAsRead() {
+    fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function clearAllNotifications() {
+    if (confirm('Clear all notifications? This cannot be undone.')) {
+        fetch('/api/notifications/clear-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
+
+{% endblock %}

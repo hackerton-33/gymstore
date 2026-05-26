@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Preferences - Gym Store{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-cog me-2 text-primary"></i>Notification Preferences
+            </h1>
+            <p class="text-muted mb-0">Customize how you receive notifications</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('notification_center') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-bell me-1"></i>Notification Center
+            </a>
+            {% if session.user_role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Dashboard
+            </a>
+            {% elif session.user_role == 'seller' %}
+            <a href="{{ url_for('seller_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Dashboard
+            </a>
+            {% elif session.user_role == 'rider' %}
+            <a href="{{ url_for('rider_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Dashboard
+            </a>
+            {% else %}
+            <a href="{{ url_for('buyer_home') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Home
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                <!-- Email Notifications -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-envelope me-2"></i>Email Notifications
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_enabled" name="email_enabled" 
+                                   {{ 'checked' if preferences.email_enabled else '' }}>
+                            <label class="form-check-label" for="email_enabled">
+                                <strong>Enable Email Notifications</strong>
+                                <small class="text-muted d-block">Receive notifications via email</small>
+                            </label>
+                        </div>
+                        
+                        <div id="email-options" class="{{ 'opacity-50' if not preferences.email_enabled else '' }}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="email_order_updates" name="email_order_updates"
+                                               {{ 'checked' if preferences.email_order_updates else '' }}
+                                               {{ 'disabled' if not preferences.email_enabled else '' }}>
+                                        <label class="form-check-label" for="email_order_updates">
+                                            <i class="fas fa-shopping-cart me-1 text-primary"></i>Order Updates
+                                            <small class="text-muted d-block">Order status changes, delivery updates</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="email_financial" name="email_financial"
+                                               {{ 'checked' if preferences.email_financial else '' }}
+                                               {{ 'disabled' if not preferences.email_enabled else '' }}>
+                                        <label class="form-check-label" for="email_financial">
+                                            <i class="fas fa-money-bill-wave me-1 text-success"></i>Financial Updates
+                                            <small class="text-muted d-block">Payments, refunds, commissions</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="email_promotions" name="email_promotions"
+                                               {{ 'checked' if preferences.email_promotions else '' }}
+                                               {{ 'disabled' if not preferences.email_enabled else '' }}>
+                                        <label class="form-check-label" for="email_promotions">
+                                            <i class="fas fa-tags me-1 text-info"></i>Promotions & Announcements
+                                            <small class="text-muted d-block">Special offers, news, updates</small>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="email_system_alerts" name="email_system_alerts"
+                                               {{ 'checked' if preferences.email_system_alerts else '' }}
+                                               {{ 'disabled' if not preferences.email_enabled else '' }}>
+                                        <label class="form-check-label" for="email_system_alerts">
+                                            <i class="fas fa-exclamation-triangle me-1 text-warning"></i>System Alerts
+                                            <small class="text-muted d-block">Account issues, security alerts</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- In-App Notifications -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-bell me-2"></i>In-App Notifications
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="app_enabled" name="app_enabled" 
+                                   {{ 'checked' if preferences.app_enabled else '' }}>
+                            <label class="form-check-label" for="app_enabled">
+                                <strong>Enable In-App Notifications</strong>
+                                <small class="text-muted d-block">Show notifications in the notification center</small>
+                            </label>
+                        </div>
+                        
+                        <div id="app-options" class="{{ 'opacity-50' if not preferences.app_enabled else '' }}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="app_order_updates" name="app_order_updates"
+                                               {{ 'checked' if preferences.app_order_updates else '' }}
+                                               {{ 'disabled' if not preferences.app_enabled else '' }}>
+                                        <label class="form-check-label" for="app_order_updates">
+                                            <i class="fas fa-shopping-cart me-1 text-primary"></i>Order Updates
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="app_financial" name="app_financial"
+                                               {{ 'checked' if preferences.app_financial else '' }}
+                                               {{ 'disabled' if not preferences.app_enabled else '' }}>
+                                        <label class="form-check-label" for="app_financial">
+                                            <i class="fas fa-money-bill-wave me-1 text-success"></i>Financial Updates
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="app_promotions" name="app_promotions"
+                                               {{ 'checked' if preferences.app_promotions else '' }}
+                                               {{ 'disabled' if not preferences.app_enabled else '' }}>
+                                        <label class="form-check-label" for="app_promotions">
+                                            <i class="fas fa-tags me-1 text-info"></i>Promotions & Announcements
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="app_system_alerts" name="app_system_alerts"
+                                               {{ 'checked' if preferences.app_system_alerts else '' }}
+                                               {{ 'disabled' if not preferences.app_enabled else '' }}>
+                                        <label class="form-check-label" for="app_system_alerts">
+                                            <i class="fas fa-exclamation-triangle me-1 text-warning"></i>System Alerts
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMS Notifications (Future Feature) -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-sms me-2"></i>SMS Notifications
+                            <span class="badge bg-info ms-2">Coming Soon</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="sms_enabled" name="sms_enabled" 
+                                   {{ 'checked' if preferences.sms_enabled else '' }} disabled>
+                            <label class="form-check-label" for="sms_enabled">
+                                <strong>Enable SMS Notifications</strong>
+                                <small class="text-muted d-block">Receive critical notifications via SMS</small>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="sms_critical_only" name="sms_critical_only"
+                                   {{ 'checked' if preferences.sms_critical_only else '' }} disabled>
+                            <label class="form-check-label" for="sms_critical_only">
+                                <i class="fas fa-exclamation-circle me-1 text-danger"></i>Critical Notifications Only
+                                <small class="text-muted d-block">Only urgent alerts (payments, security)</small>
+                            </label>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            SMS notifications will be available in a future update. Stay tuned!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Preferences
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Notification Types
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-shopping-cart me-2 text-primary"></i>Order Updates</h6>
+                        <small class="text-muted">
+                            {% if session.user_role == 'buyer' %}
+                            Order confirmations, shipping updates, delivery notifications
+                            {% elif session.user_role == 'seller' %}
+                            New orders, buyer confirmations, payment releases
+                            {% elif session.user_role == 'rider' %}
+                            New delivery assignments, pickup notifications
+                            {% else %}
+                            Order-related notifications
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-money-bill-wave me-2 text-success"></i>Financial Updates</h6>
+                        <small class="text-muted">
+                            {% if session.user_role == 'buyer' %}
+                            Payment confirmations, refund updates
+                            {% elif session.user_role == 'seller' %}
+                            Profit releases, commission reports
+                            {% elif session.user_role == 'rider' %}
+                            Commission payouts, earnings summaries
+                            {% else %}
+                            Payment and financial notifications
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-tags me-2 text-info"></i>Promotions</h6>
+                        <small class="text-muted">Special offers, discounts, announcements from admin</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-exclamation-triangle me-2 text-warning"></i>System Alerts</h6>
+                        <small class="text-muted">
+                            {% if session.user_role == 'admin' %}
+                            System errors, user registrations, complaints
+                            {% else %}
+                            Account issues, security alerts, violations
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lightbulb me-2"></i>Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Enable email for important updates you might miss</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>In-app notifications provide real-time updates</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>You can change these settings anytime</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Critical notifications are always sent for security</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle email enabled/disabled state
+    const emailEnabled = document.getElementById('email_enabled');
+    const emailOptions = document.getElementById('email-options');
+    const emailCheckboxes = emailOptions.querySelectorAll('input[type="checkbox"]');
+    
+    emailEnabled.addEventListener('change', function() {
+        if (this.checked) {
+            emailOptions.classList.remove('opacity-50');
+            emailCheckboxes.forEach(cb => cb.disabled = false);
+        } else {
+            emailOptions.classList.add('opacity-50');
+            emailCheckboxes.forEach(cb => cb.disabled = true);
+        }
+    });
+    
+    // Handle app enabled/disabled state
+    const appEnabled = document.getElementById('app_enabled');
+    const appOptions = document.getElementById('app-options');
+    const appCheckboxes = appOptions.querySelectorAll('input[type="checkbox"]');
+    
+    appEnabled.addEventListener('change', function() {
+        if (this.checked) {
+            appOptions.classList.remove('opacity-50');
+            appCheckboxes.forEach(cb => cb.disabled = false);
+        } else {
+            appOptions.classList.add('opacity-50');
+            appCheckboxes.forEach(cb => cb.disabled = true);
+        }
+    });
+});
+</script>
+{% endblock %}

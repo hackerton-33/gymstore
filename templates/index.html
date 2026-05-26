@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Fitness - Your Fitness Destination{% endblock %}
+
+{% block content %}
+<div class="video-bg-wrapper">
+    <video class="video-bg" autoplay muted loop playsinline>
+        <source src="https://media.istockphoto.com/id/915283878/video/modern-gym-interior.mp4?s=mp4-640x640-is&k=20&c=ni6j1_f65s2jkxoYIf1_9ctrbPQEuyoTg4lbtQ2pvS0=" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="video-overlay"></div>
+
+    <div class="content-on-video">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center min-vh-100">
+                    <div class="col-lg-6">
+                        <div class="hero-content">
+                            <h1 class="hero-title">Transform Your Fitness Journey</h1>
+                            <p class="hero-subtitle">Premium gym equipment, supplements, and accessories to help you achieve your fitness goals. From beginner to pro, we've got everything you need.</p>
+                            <div class="hero-buttons">
+                                <a href="{{ url_for('buyer_home') }}" class="btn btn-primary btn-lg me-3">Get Started</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="auth-container content-on-video">
+                            <div class="auth-card">
+                                <div class="auth-header">
+                                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Daily Fitness" style="height: 80px; width: auto; margin-bottom: 15px;">
+                                    <h2 class="auth-title">Welcome Back</h2>
+                                    <p class="auth-subtitle">Sign in to your Daily Fitness account</p>
+                                </div>
+                                
+                                <form method="POST" class="auth-form" id="loginForm" action="{{ url_for('index') }}">
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">Username or E-mail</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" style="color: black;"><i class="fas fa-user"></i></span>
+                                            <input type="text" class="form-control" id="username" name="username" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <label for="password" class="form-label">Password</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" style="color: black;"><i class="fas fa-lock"></i></span>
+                                            <input type="password" class="form-control" id="password" name="password" required>
+                                            <button type="button" class="btn btn-outline-secondary" id="togglePassword" aria-label="Show password">
+                                                <i class="far fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
+                                            <label class="form-check-label" for="remember_me" style="color: black;">Remember me</label>
+                                        </div>
+                                        <a href="{{ url_for('forgot_password') }}" class="auth-link" style="color: #dc3545;">Forgot Password?</a>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
+
+                                    <div class="text-center text-muted mb-2" style="font-size: 0.9rem;">or continue with</div>
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <a href="{{ url_for('auth_google') }}" 
+                                           class="btn btn-outline-danger w-100" 
+                                           style="padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; font-weight: 500;" 
+                                           aria-label="Sign in with Google">
+                                            <i class="fab fa-google" style="font-size: 1.2rem;"></i>
+                                            <span>Sign in with Google</span>
+                                        </a>
+                                    </div>
+                                </form>
+                                
+                                <div class="auth-footer">
+                                    <p class="text-center mb-0">
+                                        Don't have an account? 
+                                        <a href="{{ url_for('register') }}" class="auth-link" style="color: #dc3545;">Sign up here</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-5">
+                        <h2 class="section-title">Why Choose Daily Fitness?</h2>
+                        <p class="section-subtitle">Everything you need for your fitness journey in one place</p>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-shipping-fast"></i>
+                            </div>
+                            <h4>Fast Delivery</h4>
+                            <p>Quick and reliable shipping to get your equipment to your door fast</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                            <h4>Premium Quality</h4>
+                            <p>Only the best brands and highest quality equipment for your workouts</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-headset"></i>
+                            </div>
+                            <h4>Expert Support</h4>
+                            <p>Our fitness experts are here to help you choose the right equipment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section class="categories-section py-5 bg-dark">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-5">
+                        <h2 class="section-title text-light">Shop by Category</h2>
+                        <p class="section-subtitle text-light">Find exactly what you need for your workout routine</p>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <div class="category-card">
+                            <div class="category-icon">
+                                <i class="fas fa-weight-hanging"></i>
+                            </div>
+                            <h5>Weights</h5>
+                            <p>Dumbbells, barbells, and weight plates</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="category-card">
+                            <div class="category-icon">
+                                <i class="fas fa-running"></i>
+                            </div>
+                            <h5>Cardio Equipment</h5>
+                            <p>Treadmills, bikes, and rowing machines</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="category-card">
+                            <div class="category-icon">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                            <h5>Supplements</h5>
+                            <p>Protein, creatine, and performance boosters</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="category-card">
+                            <div class="category-icon">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <h5>Accessories</h5>
+                            <p>Mats, bands, and workout accessories</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Firebase SDK (Optional - for cross-platform auth) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<!-- Validation System -->
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+<script>
+// Firebase configuration (optional - only for mobile-registered users)
+const FIREBASE_ENABLED = false; // Set to true after configuring Firebase
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY_HERE",
+    authDomain: "gym-ecommerce-ce8ab.firebaseapp.com",
+    projectId: "gym-ecommerce-ce8ab",
+    storageBucket: "gym-ecommerce-ce8ab.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID_HERE",
+    appId: "YOUR_APP_ID_HERE"
+};
+
+// Initialize Firebase only if enabled and configured
+let firebaseInitialized = false;
+if (FIREBASE_ENABLED && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+    try {
+        firebase.initializeApp(firebaseConfig);
+        firebaseInitialized = true;
+        console.log('✅ Firebase initialized for cross-platform auth');
+    } catch (error) {
+        console.warn('⚠️ Firebase initialization failed:', error);
+    }
+}
+
+// Try Firebase authentication (for mobile-registered users)
+async function tryFirebaseLogin(email, password) {
+    if (!firebaseInitialized) {
+        return false; // Firebase not available, use traditional login
+    }
+
+    try {
+        console.log('🔐 Attempting Firebase login...');
+        
+        // Sign in with Firebase
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        console.log('✅ Firebase auth successful');
+        
+        // Get ID token
+        const idToken = await user.getIdToken();
+        console.log('🔑 Got ID token, verifying with backend...');
+        
+        // Send token to backend
+        const response = await fetch('/api/auth/verify-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idToken: idToken })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Backend verification successful');
+            // Redirect based on role
+            window.location.href = data.redirect_url;
+            return true;
+        } else {
+            console.log('⚠️ Backend verification failed:', data.message);
+            return false;
+        }
+    } catch (error) {
+        // Firebase auth failed, will try traditional login
+        console.log('ℹ️ Firebase auth not available, using traditional login');
+        return false;
+    }
+}
+
+// Traditional form submission (for website-registered users)
+function submitTraditionalLogin(form) {
+    console.log('🔐 Using traditional login...');
+    form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize validation utilities
+    const { showError, showWarning, showLoading, checkRequiredFields } = window.ValidationUtils;
+
+    // Form validation with dual authentication
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Check required fields
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+            showWarning('Missing Information', 'Please enter both username/email and password');
+            return;
+        }
+
+        // Show loading
+        const loginBtn = document.querySelector('button[type="submit"]');
+        const originalText = loginBtn.textContent;
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in...';
+
+        // Check if input looks like an email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const isEmail = emailRegex.test(username);
+
+        // Try Firebase first if it's an email and Firebase is available
+        if (isEmail && firebaseInitialized) {
+            const firebaseSuccess = await tryFirebaseLogin(username, password);
+            if (firebaseSuccess) {
+                return; // Firebase login successful, redirect handled
+            }
+        }
+
+        // Firebase not available or failed, use traditional login
+        console.log('🔐 Proceeding with traditional login...');
+        submitTraditionalLogin(form);
+    });
+
+    // Password toggle
+    const toggleBtn = document.getElementById('togglePassword');
+    const pwd = document.getElementById('password');
+    if (toggleBtn && pwd) {
+        toggleBtn.addEventListener('click', function() {
+            const isPwd = pwd.getAttribute('type') === 'password';
+            pwd.setAttribute('type', isPwd ? 'text' : 'password');
+            this.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+            this.setAttribute('aria-label', isPwd ? 'Hide password' : 'Show password');
+        });
+    }
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add hover effects to social login buttons
+    const socialBtns = document.querySelectorAll('.social-login-btn');
+    socialBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.1)';
+            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+<style>
+.video-bg-wrapper {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.video-bg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    z-index: -2;
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+}
+
+.content-on-video {
+    position: relative;
+    z-index: 1;
+}
+
+/* Make landing hero background transparent so video is visible */
+.hero-section {
+    background: transparent;
+}
+
+/* Make login page background transparent so video is visible */
+.auth-container {
+    background: transparent;
+}
+
+/* Auth Card Styling */
+.auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+
+.auth-icon {
+    font-size: 2rem;
+    color: #dc3545;
+    margin-bottom: 0.25rem;
+}
+
+.auth-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.125rem;
+}
+
+.auth-subtitle {
+    color: #666;
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+.auth-form {
+    margin-bottom: 0.75rem;
+}
+
+.form-label {
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.input-group {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.input-group-text {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #667eea;
+}
+
+.form-control {
+    border: 1px solid #dee2e6;
+    border-left: none;
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.auth-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.auth-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+.auth-footer {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.auth-footer p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.social-login-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.social-login-btn:active {
+    transform: scale(0.95);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 1rem;
+        padding: 2rem;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .hero-buttons .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

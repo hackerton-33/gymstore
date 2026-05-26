@@ -1,0 +1,1093 @@
+{% extends "buyer/base.html" %}
+
+{% block extra_head %}
+<style>
+    /* Force full width - remove ALL spacing */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    
+    .buyer-layout {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Dynamic Background */
+    .dynamic-bg {
+        position: relative;
+        background: linear-gradient(135deg, #7c5cbc 0%, #5e4a8f 100%);
+        overflow: hidden;
+    }
+    
+    .dynamic-bg::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+    
+    /* Animated Elements */
+    .floating-icon {
+        position: absolute;
+        opacity: 0.1;
+        animation: floatIcon 15s ease-in-out infinite;
+    }
+    
+    .floating-icon:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+    .floating-icon:nth-child(2) { top: 20%; right: 15%; animation-delay: 3s; }
+    .floating-icon:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 6s; }
+    .floating-icon:nth-child(4) { bottom: 10%; right: 10%; animation-delay: 9s; }
+    
+    @keyframes floatIcon {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-30px) scale(1.1); }
+    }
+    
+    /* Enhanced Hero Section with Video Background */
+    .hero-section {
+        position: relative;
+        background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+        color: white;
+        overflow: hidden;
+        min-height: 600px;
+        margin: 0 !important;
+        padding: 80px 0 !important;
+        width: 100vw !important;
+        left: 50% !important;
+        right: 50% !important;
+        margin-left: -50vw !important;
+        margin-right: -50vw !important;
+    }
+    
+    /* Video Background Carousel */
+    .hero-video-bg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        transform: translate(-50%, -50%);
+        z-index: 0;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+    }
+    
+    .hero-video-bg.active {
+        opacity: 1;
+    }
+    
+    /* Video Overlay - darkens video for better text readability */
+    .hero-video-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(52, 58, 64, 0.5) 0%, rgba(33, 37, 41, 0.5) 100%);
+        z-index: 1;
+    }
+    
+    /* Carousel Controls */
+    .carousel-control {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 3;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-size: 1.5rem;
+    }
+    
+    .carousel-control:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    .carousel-control.prev {
+        left: 20px;
+    }
+    
+    .carousel-control.next {
+        right: 20px;
+    }
+    
+    /* Carousel Indicators */
+    .carousel-indicators {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        border: 2px solid white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .indicator.active {
+        background: white;
+        transform: scale(1.2);
+    }
+    
+    .indicator:hover {
+        background: rgba(255, 255, 255, 0.8);
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hero-section .container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hero-section .floating-icon {
+        z-index: 2;
+    }
+    
+    .hero-title {
+        background: linear-gradient(45deg, #fff, #f0f0f0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+        from { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        to { text-shadow: 0 0 30px rgba(255,255,255,0.8); }
+    }
+    
+    .hero-icon {
+        font-size: 8rem;
+        color: rgba(255,255,255,0.2);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    /* Enhanced Categories */
+    .category-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .category-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    .category-card:hover::before {
+        left: 100%;
+    }
+    
+    .category-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        border-color: #667eea;
+    }
+    
+    .category-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .category-card:hover .category-icon {
+        transform: scale(1.2) rotate(10deg);
+        color: #764ba2;
+    }
+    
+    /* Compact Category Cards for 2 Rows */
+    .category-card-compact {
+        padding: 1.25rem 1rem !important;
+        min-height: 160px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .category-card-compact.active {
+        border-color: #667eea !important;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        transform: translateY(-5px);
+    }
+    
+    .category-card-compact h6 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    
+    .category-card-compact p {
+        font-size: 0.75rem;
+        line-height: 1.3;
+    }
+    
+    .category-icon-small {
+        font-size: 2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .category-icon-small i {
+        font-size: 2rem;
+    }
+    
+    /* Product Badges - Minimalist */
+    .product-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 3;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        opacity: 0.9;
+    }
+    
+    .badge-hot { background: #ff6b6b; color: white; }
+    .badge-sale { background: #00b894; color: white; }
+    .badge-new { background: #74b9ff; color: white; }
+    .badge-recommended { background: #fdcb6e; color: white; }
+    
+    /* Custom 5 columns per row layout */
+    @media (min-width: 992px) {
+        .col-lg-custom-5 {
+            flex: 0 0 auto;
+            width: 20%;
+        }
+    }
+    
+    @media (min-width: 768px) and (max-width: 991px) {
+        .col-md-4 {
+            flex: 0 0 auto;
+            width: 33.333333%;
+        }
+    }
+    
+    /* Shopee-Style Product Cards */
+    .product-card {
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border: 2px solid #ddd;
+    }
+    
+    /* Overlay link that covers entire card */
+    .product-card-link {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10;
+        text-decoration: none;
+    }
+    
+    /* Hover effect on card when link is hovered */
+    .product-card-link:hover ~ .product-image,
+    .product-card-link:hover ~ .product-content,
+    .product-card:has(.product-card-link:hover) {
+        cursor: pointer;
+    }
+    
+    .product-card:has(.product-card-link:hover) {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        border-color: #667eea;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        border-color: #667eea;
+    }
+    
+    .product-image {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 100%; /* 1:1 Aspect Ratio - Square */
+        cursor: pointer;
+        background: #f5f5f5;
+    }
+    
+    .product-image img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    
+    .product-card:hover .product-image img {
+        transform: scale(1.05);
+    }
+    
+    .product-content {
+        padding: 0.5rem !important;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid #555;
+    }
+
+    .product-category {
+        font-size: 0.65rem !important;
+        margin-bottom: 0.25rem !important;
+        text-transform: uppercase;
+    }
+
+    .product-title {
+        font-size: 0.85rem !important;
+        margin-bottom: 0.25rem !important;
+        line-height: 1.3 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.2em;
+    }
+
+    .product-brand {
+        font-size: 0.7rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .product-price {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.35rem !important;
+        font-weight: 600 !important;
+    }
+
+    .product-quantity {
+        font-size: 0.65rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .product-stock {
+        margin-bottom: 0.35rem !important;
+    }
+
+    .product-stock .badge {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.35rem !important;
+    }
+
+    .text-warning i {
+        font-size: 0.65rem !important;
+    }
+
+    .product-card .btn {
+        padding: 0.35rem 0.6rem !important;
+        font-size: 0.75rem !important;
+        border-radius: 4px !important;
+    }
+
+    .product-card .btn i {
+        font-size: 0.7rem !important;
+    }
+
+    .d-flex.gap-2 {
+        gap: 0.35rem !important;
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.35rem !important;
+        font-size: 0.7rem !important;
+    }
+
+    /* Ensure grid columns are equal width */
+    .row.g-4 > [class*='col-'] {
+        display: flex;
+    }
+
+    .row.g-4 > [class*='col-'] > .product-card {
+        width: 100%;
+    }
+
+
+
+    /* Out of stock styling - grayscale effect */
+    .product-card.out-of-stock {
+        opacity: 0.7;
+    }
+
+    .product-card.out-of-stock .product-image img {
+        filter: grayscale(100%);
+    }
+
+    .product-card.out-of-stock:hover .product-image img {
+        transform: scale(1.0);
+        filter: grayscale(100%);
+    }
+
+    .product-card.out-of-stock .product-content {
+        background: #f5f5f5;
+    }
+
+    .product-card.out-of-stock .product-title,
+    .product-card.out-of-stock .product-brand,
+    .product-card.out-of-stock .product-category {
+        color: #999 !important;
+    }
+
+    .product-card.out-of-stock .product-price {
+        color: #999 !important;
+    }
+
+    /* Hide the overlay button in center of image */
+    .product-overlay {
+        display: none;
+    }
+
+    /* Add to cart button below image */
+    .product-add-to-cart-btn {
+        width: 100%;
+        border-radius: 8px;
+        padding: 0.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .product-add-to-cart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+    
+    /* Section Headers */
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+    
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border-radius: 2px;
+    }
+    
+    /* Promotional Banner */
+    .promo-banner {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 1rem 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        width: 100vw !important;
+        left: 50% !important;
+        right: 50% !important;
+        margin-left: -50vw !important;
+        margin-right: -50vw !important;
+    }
+    
+    .promo-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+
+</style>
+{% endblock %}
+
+{% block buyer_content %}
+
+
+<!-- Hero Section -->
+<section class="hero-section py-5">
+    <!-- Video Background Carousel -->
+    <video autoplay muted loop playsinline class="hero-video-bg active">
+        <source src="{{ url_for('static', filename='videos/gym-equipment.mp4') }}" type="video/mp4">
+    </video>
+    
+    <video muted loop playsinline class="hero-video-bg">
+        <source src="{{ url_for('static', filename='videos/fitness-bg.mp4') }}" type="video/mp4">
+    </video>
+    
+    <video muted loop playsinline class="hero-video-bg">
+        <source src="{{ url_for('static', filename='videos/dumbbells-floor.mp4') }}" type="video/mp4">
+    </video>
+    
+    <video muted loop playsinline class="hero-video-bg">
+        <source src="{{ url_for('static', filename='videos/dumbbells-kitchen.mp4') }}" type="video/mp4">
+    </video>
+    
+    <video muted loop playsinline class="hero-video-bg">
+        <source src="{{ url_for('static', filename='videos/Healthy-Gym.mp4') }}" type="video/mp4">
+    </video>
+    
+    <!-- Video Overlay -->
+    <div class="hero-video-overlay"></div>
+    
+    <!-- Carousel Controls -->
+    <button class="carousel-control prev" onclick="changeSlide(-1)">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="carousel-control next" onclick="changeSlide(1)">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+    
+    <!-- Carousel Indicators -->
+    <div class="carousel-indicators">
+        <div class="indicator active" onclick="goToSlide(0)"></div>
+        <div class="indicator" onclick="goToSlide(1)"></div>
+        <div class="indicator" onclick="goToSlide(2)"></div>
+        <div class="indicator" onclick="goToSlide(3)"></div>
+        <div class="indicator" onclick="goToSlide(4)"></div>
+    </div>
+    
+    <div class="floating-icon">
+        <i class="fas fa-dumbbell"></i>
+    </div>
+    <div class="floating-icon">
+        <i class="fas fa-running"></i>
+    </div>
+    <div class="floating-icon">
+        <i class="fas fa-weight-hanging"></i>
+    </div>
+    <div class="floating-icon">
+        <i class="fas fa-heartbeat"></i>
+    </div>
+    
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-4 fw-bold mb-4 hero-title">Transform Your Fitness Journey</h1>
+                    <p class="lead mb-4">Discover premium gym equipment, supplements, and accessories designed to help you achieve your fitness goals. Join thousands of satisfied customers!</p>
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('buyer_shop') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                        </a>
+                        <a href="{{ url_for('buyer_collections') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-star me-2"></i>Featured
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Enhanced Categories Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Shop by Category</h2>
+            <p class="section-subtitle">Find exactly what you need for your workout routine</p>
+        </div>
+        
+        <div class="row g-3">
+            {% for cat in categories %}
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ url_for('buyer_home', category=cat.name) }}" class="category-card category-card-compact category-link" data-category="{{ cat.name }}">
+                    <div class="category-icon category-icon-small">
+                        {% if cat.image %}
+                            <img src="{{ cat.image }}" alt="{{ cat.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                        {% else %}
+                            <i class="fas fa-tag"></i>
+                        {% endif %}
+                    </div>
+                    <h6 class="mb-1">{{ cat.name }}</h6>
+                    <p class="text-muted mb-0 small">{{ cat.description[:30] if cat.description else 'Shop now' }}...</p>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Best Sellers Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🔥 Best Sellers</h2>
+            <p class="section-subtitle">Our most popular products loved by customers</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in best_sellers %}
+            <div class="col-md-4 col-lg-custom-5">
+                <div class="product-card {% if product.stock_quantity == 0 %}out-of-stock{% endif %}">
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}" class="product-card-link"></a>
+                    <div class="product-image">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid">
+                        {% else %}
+                            <div class="product-placeholder d-flex align-items-center justify-content-center" style="height: 200px; background: #f8f9fa;">
+                                <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Product Badge -->
+                        {% if loop.index == 1 %}
+                            <div class="product-badge badge-hot">Hot</div>
+                        {% elif loop.index == 2 %}
+                            <div class="product-badge badge-sale">Sale</div>
+                        {% elif loop.index == 3 %}
+                            <div class="product-badge badge-recommended">Recommended</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-content">
+                        <div class="product-category text-muted small">{{ product.category.name }}</div>
+                        <h6 class="product-title mb-1 text-dark">{{ product.name }}</h6>
+                        <div class="product-brand text-muted small">{{ product.brand or 'No Brand' }}</div>
+                        <div class="product-price fw-bold text-primary">₱{{ "%.2f"|format(product.price) }}</div>
+                        <div class="product-quantity text-muted small">
+                            <i class="fas fa-box me-1"></i>{{ product.stock_quantity }} available
+                        </div>
+                        <div class="mt-1 d-flex align-items-center gap-2">
+                            <div class="text-warning">
+                                {% set avg = product.average_rating %}
+                                {% for i in range(1,6) %}
+                                    {% if i <= avg %}<i class="fas fa-star"></i>{% elif i - avg < 1 %}<i class="fas fa-star-half-alt"></i>{% else %}<i class="far fa-star"></i>{% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ product.review_count }})</small>
+                            </div>
+                            <span class="text-muted">|</span>
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-bag me-1"></i>{{ product.total_sold or 0 }} sold
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- New Arrivals Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">✨ New Arrivals</h2>
+            <p class="section-subtitle">Fresh products just added to our store</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in new_arrivals %}
+            <div class="col-md-4 col-lg-custom-5">
+                <div class="product-card {% if product.stock_quantity == 0 %}out-of-stock{% endif %}">
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}" class="product-card-link"></a>
+                    <div class="product-image">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid">
+                        {% else %}
+                            <div class="product-placeholder d-flex align-items-center justify-content-center" style="height: 200px; background: #f8f9fa;">
+                                <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- New Badge -->
+                        <div class="product-badge badge-new">New</div>
+                    </div>
+                    <div class="product-content">
+                        <div class="product-category text-muted small">{{ product.category.name }}</div>
+                        <h6 class="product-title mb-1 text-dark">{{ product.name }}</h6>
+                        <div class="product-brand text-muted small">{{ product.brand or 'No Brand' }}</div>
+                        <div class="product-price fw-bold text-primary">₱{{ "%.2f"|format(product.price) }}</div>
+                        <div class="product-quantity text-muted small">
+                            <i class="fas fa-box me-1"></i>{{ product.stock_quantity }} available
+                        </div>
+                        <div class="mt-1 d-flex align-items-center gap-2">
+                            <div class="text-warning">
+                                {% set avg = product.average_rating %}
+                                {% for i in range(1,6) %}
+                                    {% if i <= avg %}<i class="fas fa-star"></i>{% elif i - avg < 1 %}<i class="fas fa-star-half-alt"></i>{% else %}<i class="far fa-star"></i>{% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ product.review_count }})</small>
+                            </div>
+                            <span class="text-muted">|</span>
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-bag me-1"></i>{{ product.total_sold or 0 }} sold
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured / Recommended -->
+{% if featured_products %}
+<section class="py-5">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">⭐ Recommended for You</h2>
+            <p class="section-subtitle">Handpicked products based on your preferences</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-md-4 col-lg-custom-5">
+                <div class="product-card {% if product.stock_quantity == 0 %}out-of-stock{% endif %}">
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}" class="product-card-link"></a>
+                    <div class="product-image">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid">
+                        {% else %}
+                            <div class="product-placeholder d-flex align-items-center justify-content-center" style="height: 200px; background: #f8f9fa;">
+                                <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Recommended Badge -->
+                        <div class="product-badge badge-recommended">Recommended</div>
+                    </div>
+                    <div class="product-content">
+                        <div class="product-category text-muted small">{{ product.category.name }}</div>
+                        <h6 class="product-title mb-1 text-dark">{{ product.name }}</h6>
+                        <div class="product-brand text-muted small">{{ product.brand or 'No Brand' }}</div>
+                        <div class="product-price fw-bold text-primary">₱{{ "%.2f"|format(product.price) }}</div>
+                        <div class="product-quantity text-muted small">
+                            <i class="fas fa-box me-1"></i>{{ product.stock_quantity }} available
+                        </div>
+                        <div class="mt-1 d-flex align-items-center gap-2">
+                            <div class="text-warning">
+                                {% set avg = product.average_rating %}
+                                {% for i in range(1,6) %}
+                                    {% if i <= avg %}<i class="fas fa-star"></i>{% elif i - avg < 1 %}<i class="fas fa-star-half-alt"></i>{% else %}<i class="far fa-star"></i>{% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ product.review_count }})</small>
+                            </div>
+                            <span class="text-muted">|</span>
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-bag me-1"></i>{{ product.total_sold or 0 }} sold
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('buyer_shop') }}" class="btn btn-outline-primary btn-lg">
+                View All Products <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- All Products Section -->
+<section class="py-5" id="all-products-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">{{ current_category or 'All Products' }}</h2>
+            <p class="section-subtitle">{{ 'Explore items in ' + current_category if current_category else 'Browse our complete collection' }}</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in products %}
+            <div class="col-md-4 col-lg-custom-5">
+                <div class="product-card {% if product.stock_quantity == 0 %}out-of-stock{% endif %}">
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}" class="product-card-link"></a>
+                    <div class="product-image">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid">
+                        {% else %}
+                            <div class="product-placeholder d-flex align-items-center justify-content-center" style="height: 200px; background: #f8f9fa;">
+                                <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Stock Badge -->
+                        {% if product.stock_quantity > 10 %}
+                            <div class="product-badge badge-sale">In Stock</div>
+                        {% elif product.stock_quantity > 0 %}
+                            <div class="product-badge badge-hot">Low Stock</div>
+                        {% else %}
+                            <div class="product-badge" style="background: #dc3545; color: white;">Out of Stock</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-content">
+                        <div class="product-category text-muted small">{{ product.category.name }}</div>
+                        <h6 class="product-title mb-1 text-dark">{{ product.name }}</h6>
+                        <div class="product-brand text-muted small">{{ product.brand or 'No Brand' }}</div>
+                        <div class="product-price fw-bold text-primary">₱{{ "%.2f"|format(product.price) }}</div>
+                        <div class="product-quantity text-muted small">
+                            <i class="fas fa-box me-1"></i>{{ product.stock_quantity }} available
+                        </div>
+                        <div class="mt-1 d-flex align-items-center gap-2">
+                            <div class="text-warning">
+                                {% set avg = product.average_rating %}
+                                {% for i in range(1,6) %}
+                                    {% if i <= avg %}<i class="fas fa-star"></i>{% elif i - avg < 1 %}<i class="fas fa-star-half-alt"></i>{% else %}<i class="far fa-star"></i>{% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ product.review_count }})</small>
+                            </div>
+                            <span class="text-muted">|</span>
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-bag me-1"></i>{{ product.total_sold or 0 }} sold
+                            </small>
+                        </div>
+                        {% if product.description %}
+                        <p class="mt-2 text-muted small" style="min-height: 40px;">{{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{{ url_for('buyer_shop') }}" class="btn btn-outline-primary btn-lg">
+                View All Products <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-dark text-light">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title text-light">Why Choose Gym Store?</h2>
+            <p class="section-subtitle text-light">Everything you need for your fitness journey in one place</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-shipping-fast fa-3x text-primary"></i>
+                    </div>
+                    <h5>Fast Delivery</h5>
+                    <p>Quick and reliable shipping to get your equipment to your door fast</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-medal fa-3x text-warning"></i>
+                    </div>
+                    <h5>Premium Quality</h5>
+                    <p>Only the best brands and highest quality equipment for your workouts</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-headset fa-3x text-success"></i>
+                    </div>
+                    <h5>Expert Support</h5>
+                    <p>Our fitness experts are here to help you choose the right equipment</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Save scroll position before navigating
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore scroll position if coming from category click
+    const savedScroll = sessionStorage.getItem('categoryScrollPos');
+    if (savedScroll) {
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(savedScroll));
+            sessionStorage.removeItem('categoryScrollPos');
+        }, 100);
+    }
+    
+    // Save scroll position when clicking category links
+    document.querySelectorAll('.category-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Save current scroll position
+            sessionStorage.setItem('categoryScrollPos', window.scrollY);
+        });
+    });
+    
+    // Highlight active category
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeCategory = urlParams.get('category');
+    if (activeCategory) {
+        const activeLink = document.querySelector(`.category-link[data-category="${activeCategory}"]`);
+        if (activeLink) activeLink.classList.add('active');
+    }
+    
+
+});
+
+// ========================================
+// HERO VIDEO CAROUSEL
+// ========================================
+let currentSlide = 0;
+const videos = document.querySelectorAll('.hero-video-bg');
+const indicators = document.querySelectorAll('.indicator');
+let autoSlideInterval;
+
+function showSlide(index) {
+    videos.forEach(video => {
+        video.classList.remove('active');
+        video.pause();
+    });
+    
+    indicators.forEach(ind => ind.classList.remove('active'));
+    
+    videos[index].classList.add('active');
+    videos[index].play();
+    indicators[index].classList.add('active');
+}
+
+function changeSlide(direction) {
+    currentSlide += direction;
+    if (currentSlide >= videos.length) currentSlide = 0;
+    if (currentSlide < 0) currentSlide = videos.length - 1;
+    showSlide(currentSlide);
+    resetAutoSlide();
+}
+
+function goToSlide(index) {
+    currentSlide = index;
+    showSlide(currentSlide);
+    resetAutoSlide();
+}
+
+function autoSlide() {
+    currentSlide++;
+    if (currentSlide >= videos.length) currentSlide = 0;
+    showSlide(currentSlide);
+}
+
+function resetAutoSlide() {
+    clearInterval(autoSlideInterval);
+    autoSlideInterval = setInterval(autoSlide, 5000);
+}
+
+// Initialize carousel
+document.addEventListener('DOMContentLoaded', function() {
+    if (videos.length > 0) {
+        videos[0].play();
+        autoSlideInterval = setInterval(autoSlide, 5000);
+    }
+    
+    // Touch swipe support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    const heroSection = document.querySelector('.hero-section');
+    
+    heroSection.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    heroSection.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+    
+    function handleSwipe() {
+        if (touchEndX < touchStartX - 50) {
+            // Swipe left - next slide
+            changeSlide(1);
+        }
+        if (touchEndX > touchStartX + 50) {
+            // Swipe right - previous slide
+            changeSlide(-1);
+        }
+    }
+});
+</script>
+{% endblock %}
+

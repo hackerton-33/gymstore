@@ -1,0 +1,349 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Admin Settings - Gym Store{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-cogs me-2 text-primary"></i>System Settings
+            </h1>
+            <p class="text-muted mb-0">Configure system-wide settings and preferences</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- General Settings -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-sliders-h me-2"></i>General Settings
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin_settings') }}">
+                        <div class="row">
+                            <!-- Site Information -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Site Information</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="site_name" class="form-label">Site Name</label>
+                                    <input type="text" class="form-control" id="site_name" name="site_name" 
+                                           value="{{ settings.get('site_name', 'Gym Store') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="site_description" class="form-label">Site Description</label>
+                                    <textarea class="form-control" id="site_description" name="site_description" rows="3">{{ settings.get('site_description', 'Your one-stop shop for gym equipment and fitness gear') }}</textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">Contact Email</label>
+                                    <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                           value="{{ settings.get('contact_email', 'admin@gymstore.com') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">Contact Phone</label>
+                                    <input type="text" class="form-control" id="contact_phone" name="contact_phone" 
+                                           value="{{ settings.get('contact_phone', '+63 123 456 7890') }}">
+                                </div>
+                            </div>
+                            
+                            <!-- Business Settings -->
+                            <div class="col-md-6">
+                                <h6 class="text-success mb-3">Business Settings</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="commission_rate" class="form-label">Commission Rate (%)</label>
+                                    <input type="number" class="form-control" id="commission_rate" name="commission_rate" 
+                                           min="0" max="100" step="0.1" value="{{ settings.get('commission_rate', '5.0') }}">
+                                    <small class="form-text text-muted">Percentage commission charged to sellers</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="tax_rate" class="form-label">Tax Rate (%)</label>
+                                    <input type="number" class="form-control" id="tax_rate" name="tax_rate" 
+                                           min="0" max="100" step="0.1" value="{{ settings.get('tax_rate', '12.0') }}">
+                                    <small class="form-text text-muted">VAT or sales tax rate</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="shipping_fee" class="form-label">Default Shipping Fee (₱)</label>
+                                    <input type="number" class="form-control" id="shipping_fee" name="shipping_fee" 
+                                           min="0" step="0.01" value="{{ settings.get('shipping_fee', '50.00') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="free_shipping_threshold" class="form-label">Free Shipping Threshold (₱)</label>
+                                    <input type="number" class="form-control" id="free_shipping_threshold" name="free_shipping_threshold" 
+                                           min="0" step="0.01" value="{{ settings.get('free_shipping_threshold', '1000.00') }}">
+                                    <small class="form-text text-muted">Minimum order amount for free shipping</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- System Preferences -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-3">System Preferences</h6>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto_approve_buyers" name="auto_approve_buyers" 
+                                               {{ 'checked' if settings.get('auto_approve_buyers', False) else '' }}>
+                                        <label class="form-check-label" for="auto_approve_buyers">
+                                            Auto-approve buyer registrations
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require_email_verification" name="require_email_verification" 
+                                               {{ 'checked' if settings.get('require_email_verification', True) else '' }}>
+                                        <label class="form-check-label" for="require_email_verification">
+                                            Require email verification
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_notifications" name="enable_notifications" 
+                                               {{ 'checked' if settings.get('enable_notifications', True) else '' }}>
+                                        <label class="form-check-label" for="enable_notifications">
+                                            Enable system notifications
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="text-warning mb-3">Order Settings</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="auto_confirm_hours" class="form-label">Auto-confirm orders after (hours)</label>
+                                    <input type="number" class="form-control" id="auto_confirm_hours" name="auto_confirm_hours" 
+                                           min="1" max="168" value="{{ settings.get('auto_confirm_hours', '24') }}">
+                                    <small class="form-text text-muted">Orders will be auto-confirmed if seller doesn't respond</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="max_order_items" class="form-label">Maximum items per order</label>
+                                    <input type="number" class="form-control" id="max_order_items" name="max_order_items" 
+                                           min="1" max="100" value="{{ settings.get('max_order_items', '20') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="allow_cod" name="allow_cod" 
+                                               {{ 'checked' if settings.get('allow_cod', True) else '' }}>
+                                        <label class="form-check-label" for="allow_cod">
+                                            Allow Cash on Delivery (COD)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions Sidebar -->
+        <div class="col-lg-4">
+            <!-- System Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-server me-2"></i>System Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Database</span>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>File Storage</span>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Email Service</span>
+                            <span class="badge bg-warning">Not Configured</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>SMS Service</span>
+                            <span class="badge bg-warning">Not Configured</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="clearCache()">
+                            <i class="fas fa-broom me-2"></i>Clear Cache
+                        </button>
+                        
+                        <button class="btn btn-outline-info btn-sm" onclick="backupDatabase()">
+                            <i class="fas fa-database me-2"></i>Backup Database
+                        </button>
+                        
+                        <button class="btn btn-outline-warning btn-sm" onclick="sendTestEmail()">
+                            <i class="fas fa-envelope me-2"></i>Test Email
+                        </button>
+                        
+                        <button class="btn btn-outline-success btn-sm" onclick="generateReport()">
+                            <i class="fas fa-chart-line me-2"></i>Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Changes -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>Recent Changes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item mb-3">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Commission rate updated</h6>
+                                <small class="text-muted">2 hours ago</small>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item mb-3">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Email notifications enabled</h6>
+                                <small class="text-muted">1 day ago</small>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Shipping settings configured</h6>
+                                <small class="text-muted">3 days ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 17px;
+    width: 2px;
+    height: calc(100% - 5px);
+    background-color: #e3e6f0;
+}
+</style>
+
+<script>
+function clearCache() {
+    if (confirm('Are you sure you want to clear the system cache?')) {
+        // Implement cache clearing logic
+        alert('Cache cleared successfully!');
+    }
+}
+
+function backupDatabase() {
+    if (confirm('Are you sure you want to create a database backup?')) {
+        // Implement database backup logic
+        alert('Database backup initiated!');
+    }
+}
+
+function sendTestEmail() {
+    // Implement test email logic
+    alert('Test email sent to admin email address!');
+}
+
+function generateReport() {
+    // Implement report generation logic
+    alert('System report generation started!');
+}
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const commissionRate = document.getElementById('commission_rate').value;
+        const taxRate = document.getElementById('tax_rate').value;
+        
+        if (commissionRate < 0 || commissionRate > 100) {
+            e.preventDefault();
+            alert('Commission rate must be between 0 and 100%');
+            return;
+        }
+        
+        if (taxRate < 0 || taxRate > 100) {
+            e.preventDefault();
+            alert('Tax rate must be between 0 and 100%');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

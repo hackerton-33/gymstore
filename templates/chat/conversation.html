@@ -1,0 +1,430 @@
+{% if current_user and current_user.role == 'admin' %}
+    {% extends "admin/base_admin.html" %}
+{% elif current_user and current_user.role == 'seller' %}
+    {% extends "seller/base.html" %}
+{% else %}
+    {% extends "buyer/base.html" %}
+{% endif %}
+
+{% block admin_content %}
+{% block seller_content %}
+{% block buyer_content %}
+<div class="container-fluid py-4" style="max-width: 1200px;" 
+     data-conversation-id="{{ conversation.id }}" 
+     data-current-user-id="{{ session.user_id }}" 
+     data-other-user-id="{{ other_user.id }}">
+    <div class="card shadow-sm" style="height: calc(100vh - 120px);">
+        <!-- Chat Header -->
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <button onclick="goBackToMessages()" class="btn btn-sm btn-light me-3 back-btn" title="Back to Messages">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="back-text ms-1">Back</span>
+                    </button>
+                    <div class="d-flex align-items-center">
+                        {% if other_user.profile_image %}
+                        <img src="{{ other_user.profile_image }}" 
+                             class="rounded-circle me-3" width="45" height="45" alt="{{ other_user.username }}" style="object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-3" 
+                             style="width: 45px; height: 45px;">
+                            <strong>{{ other_user.username[0].upper() }}</strong>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h5 class="mb-0">{{ other_user.business_name or other_user.username }}</h5>
+                            <small>
+                                <span class="badge badge-sm bg-light text-dark">{{ other_user.role.capitalize() }}</span>
+                                <span id="onlineStatus" class="ms-2">
+                                    {% if other_user.online_status and other_user.online_status.is_online %}
+                                    <i class="fas fa-circle text-success"></i> Online
+                                    {% else %}
+                                    <i class="fas fa-circle text-secondary"></i> Offline
+                                    {% endif %}
+                                </span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    {% if conversation.product %}
+                    <small class="badge bg-light text-dark">
+                        <i class="fas fa-box me-1"></i>{{ conversation.product.name[:30] }}...
+                    </small>
+                    {% elif conversation.order %}
+                    <small class="badge bg-light text-dark">
+                        <i class="fas fa-shopping-cart me-1"></i>Order #{{ conversation.order.order_number }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="card-body p-0 d-flex flex-column" style="height: calc(100% - 140px);">
+            <div id="messagesContainer" class="flex-grow-1 p-3" style="overflow-y: auto; background-color: #f8f9fa;">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="message-wrapper mb-3 {% if message.sender_id == session.user_id %}text-end{% endif %}" 
+                         data-message-id="{{ message.id }}">
+                        <div class="d-inline-block" style="max-width: 70%;">
+                            {% if message.sender_id != session.user_id %}
+                            <small class="text-muted d-block mb-1">{{ message.sender.username }}</small>
+                            {% endif %}
+                            
+                            <div class="message-bubble {% if message.sender_id == session.user_id %}sent{% else %}received{% endif %}">
+                                <div class="message-content">{{ message.message_content }}</div>
+                                <div class="message-meta">
+                                    <small class="text-muted">
+                                        {{ message.created_at.strftime('%I:%M %p') }}
+                                        {% if message.sender_id == session.user_id %}
+                                            {% if message.is_read %}
+                                            <i class="fas fa-check-double text-primary" title="Read"></i>
+                                            {% elif message.is_delivered %}
+                                            <i class="fas fa-check-double text-muted" title="Delivered"></i>
+                                            {% else %}
+                                            <i class="fas fa-check text-muted" title="Sent"></i>
+                                            {% endif %}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typingIndicator" class="px-3 py-2 text-muted" style="display: none; min-height: 40px;">
+                <small><i class="fas fa-ellipsis-h"></i> {{ other_user.username }} is typing...</small>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="card-footer bg-white border-top">
+            {% if conversation.is_restricted %}
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-ban me-2"></i>
+                This conversation has been restricted by admin. 
+                {% if conversation.restriction_reason %}
+                Reason: {{ conversation.restriction_reason }}
+                {% endif %}
+            </div>
+            {% else %}
+            <form id="messageForm" class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="attachBtn" title="Attach file (Coming soon)">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="text" id="messageInput" class="form-control" 
+                       placeholder="Type your message..." autocomplete="off" maxlength="1000" required>
+                <button type="submit" class="btn btn-primary" id="sendBtn">
+                    <i class="fas fa-paper-plane me-1"></i>Send
+                </button>
+            </form>
+            <small class="text-muted d-block mt-1">
+                <i class="fas fa-lock me-1"></i>Messages are encrypted and private
+            </small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.message-bubble {
+    padding: 10px 15px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.message-bubble.sent {
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message-bubble.received {
+    background-color: white;
+    color: #333;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 4px;
+}
+
+.message-meta {
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+.message-bubble.sent .message-meta {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.message-bubble.received .message-meta {
+    color: #6c757d;
+}
+
+#messagesContainer {
+    scroll-behavior: smooth;
+}
+
+#messagesContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#messagesContainer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.message-wrapper {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#messageInput:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Back Button Styles - Minimalist */
+.back-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.back-btn:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.back-btn i {
+    font-size: 16px;
+}
+
+.back-text {
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+    .message-bubble {
+        max-width: 85% !important;
+    }
+    
+    .back-btn {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 8px;
+    }
+    
+    .back-text {
+        display: none;
+    }
+}
+</style>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+// Connect to Socket.IO server
+const socket = io();
+const pageContainer = document.querySelector('.container-fluid[data-conversation-id]');
+const conversationId = parseInt(pageContainer.dataset.conversationId);
+const currentUserId = parseInt(pageContainer.dataset.currentUserId);
+const otherUserId = parseInt(pageContainer.dataset.otherUserId);
+let typingTimeout;
+
+// Scroll to bottom of messages
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    container.scrollTop = container.scrollHeight;
+}
+
+// Add message to chat
+function addMessage(message, isSent = false) {
+    const container = document.getElementById('messagesContainer');
+    
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = `message-wrapper mb-3 ${isSent ? 'text-end' : ''}`;
+    messageWrapper.setAttribute('data-message-id', message.id);
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'd-inline-block';
+    messageDiv.style.maxWidth = '70%';
+    
+    if (!isSent) {
+        const senderName = document.createElement('small');
+        senderName.className = 'text-muted d-block mb-1';
+        senderName.textContent = message.sender_name;
+        messageDiv.appendChild(senderName);
+    }
+    
+    const bubble = document.createElement('div');
+    bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
+    
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.textContent = message.message_content;
+    
+    const meta = document.createElement('div');
+    meta.className = 'message-meta';
+    const time = new Date(message.created_at);
+    meta.innerHTML = `<small class="text-muted">${time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</small>`;
+    
+    bubble.appendChild(content);
+    bubble.appendChild(meta);
+    messageDiv.appendChild(bubble);
+    messageWrapper.appendChild(messageDiv);
+    container.appendChild(messageWrapper);
+    
+    scrollToBottom();
+}
+
+// Send message via WebSocket
+socket.on('connect', function() {
+    console.log('[CHAT] Connected to server');
+});
+
+socket.on('disconnect', function() {
+    console.log('[CHAT] Disconnected from server');
+});
+
+// Handle new messages from other user
+socket.on('new_message', function(message) {
+    if (message.conversation_id === conversationId && message.sender_id !== currentUserId) {
+        addMessage(message, false);
+        
+        // Mark as read
+        fetch(`/chat/api/mark-read/${conversationId}`, { method: 'POST' });
+    }
+});
+
+// Handle message sent confirmation
+socket.on('message_sent', function(message) {
+    console.log('[CHAT] Message sent successfully', message);
+});
+
+// Handle typing indicator
+socket.on('user_typing', function(data) {
+    if (data.conversation_id === conversationId && data.user_id === otherUserId) {
+        const indicator = document.getElementById('typingIndicator');
+        if (data.is_typing) {
+            indicator.style.display = 'block';
+            scrollToBottom();
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+});
+
+// Handle online status updates
+socket.on('user_online', function(data) {
+    if (data.user_id === otherUserId) {
+        document.getElementById('onlineStatus').innerHTML = '<i class="fas fa-circle text-success"></i> Online';
+    }
+});
+
+socket.on('user_offline', function(data) {
+    if (data.user_id === otherUserId) {
+        document.getElementById('onlineStatus').innerHTML = '<i class="fas fa-circle text-secondary"></i> Offline';
+    }
+});
+
+// Form submission
+document.getElementById('messageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Send via WebSocket
+    socket.emit('send_message', {
+        conversation_id: conversationId,
+        message: message
+    });
+    
+    // Add to UI immediately (optimistic update)
+    addMessage({
+        id: Date.now(),
+        sender_id: currentUserId,
+        sender_name: 'You',
+        message_content: message,
+        created_at: new Date().toISOString()
+    }, true);
+    
+    input.value = '';
+    input.focus();
+});
+
+// Typing indicator
+const messageInput = document.getElementById('messageInput');
+messageInput.addEventListener('input', function() {
+    socket.emit('typing', {
+        conversation_id: conversationId,
+        is_typing: true
+    });
+    
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(function() {
+        socket.emit('typing', {
+            conversation_id: conversationId,
+            is_typing: false
+        });
+    }, 1000);
+});
+
+// Attach button placeholder
+document.getElementById('attachBtn').addEventListener('click', function() {
+    alert('File attachments coming soon!');
+});
+
+// Back to messages function with history state
+function goBackToMessages() {
+    // Set history state to indicate coming from conversation
+    window.history.pushState({ fromConversation: true }, '', '/chat');
+    window.location.href = '/chat';
+}
+
+// Scroll to bottom on load
+scrollToBottom();
+
+// Mark messages as read on page load
+fetch(`/chat/api/mark-read/${conversationId}`, { method: 'POST' });
+</script>
+{% endblock %}
+{% endblock %}
+{% endblock %}

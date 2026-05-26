@@ -1,0 +1,732 @@
+{% extends "rider/base.html" %}
+
+{% block page_title %}Delivery Map{% endblock %}
+{% block page_subtitle %}Track your deliveries in real-time{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    /* Full screen map layout */
+    .rider-content {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .map-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 120px);
+        min-height: 600px;
+    }
+    
+    #deliveryMap {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+    
+    /* Delivery sidebar */
+    .delivery-sidebar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: calc(100% - 40px);
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        z-index: 1000;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .sidebar-header {
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .sidebar-header h3 {
+        margin: 0 0 5px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .sidebar-header p {
+        margin: 0;
+        font-size: 13px;
+        opacity: 0.9;
+    }
+    
+    .delivery-count {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    
+    .delivery-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+    
+    .delivery-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .delivery-list::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    
+    .delivery-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    
+    .delivery-card {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .delivery-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .delivery-card.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    }
+    
+    .delivery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    
+    .order-number {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 15px;
+    }
+    
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-confirmed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-preparing {
+        background: #fed7aa;
+        color: #9a3412;
+    }
+    
+    .status-for_pickup {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-picked_up {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .status-on_delivery {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+    
+    .delivery-info {
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #64748b;
+        display: flex;
+        align-items: start;
+        gap: 8px;
+    }
+    
+    .delivery-info i {
+        width: 16px;
+        margin-top: 2px;
+        color: #94a3b8;
+    }
+    
+    .delivery-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .btn-navigate {
+        flex: 1;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-navigate:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-call {
+        padding: 8px 12px;
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-call:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+    }
+    
+    .empty-state i {
+        font-size: 48px;
+        color: #cbd5e1;
+        margin-bottom: 16px;
+    }
+    
+    .empty-state h4 {
+        margin: 0 0 8px 0;
+        color: #64748b;
+        font-size: 16px;
+    }
+    
+    .empty-state p {
+        margin: 0;
+        font-size: 13px;
+    }
+    
+    /* Location button */
+    .location-btn {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 14px 24px;
+        border-radius: 50px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: #1e293b;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .location-btn:hover {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        transform: translateX(-50%) translateY(-2px);
+    }
+    
+    .location-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .location-btn i {
+        font-size: 16px;
+    }
+    
+    /* Custom Leaflet styles */
+    .leaflet-popup-content-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    
+    .leaflet-popup-content {
+        margin: 16px;
+        min-width: 220px;
+    }
+    
+    .popup-header {
+        font-weight: 700;
+        font-size: 16px;
+        color: #1e293b;
+        margin-bottom: 12px;
+    }
+    
+    .popup-info {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: start;
+        gap: 8px;
+    }
+    
+    .popup-info i {
+        width: 16px;
+        margin-top: 2px;
+    }
+    
+    .popup-btn {
+        width: 100%;
+        padding: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 12px;
+        transition: all 0.2s;
+    }
+    
+    .popup-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .map-container {
+            height: calc(100vh - 80px);
+        }
+        
+        .delivery-sidebar {
+            width: calc(100% - 20px);
+            left: 10px;
+            right: 10px;
+            top: auto;
+            bottom: 80px;
+            max-height: 45vh;
+        }
+        
+        .location-btn {
+            bottom: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block rider_content %}
+<div class="map-container">
+    <!-- Map -->
+    <div id="deliveryMap"></div>
+    
+    <!-- Delivery Sidebar -->
+    <div class="delivery-sidebar">
+        <div class="sidebar-header">
+            <h3>
+                <i class="fas fa-map-marked-alt"></i> Active Deliveries
+                <span class="delivery-count" id="deliveryCount">0</span>
+            </h3>
+            <p>Click on a delivery to view on map</p>
+        </div>
+        <div class="delivery-list" id="deliveryList">
+            <div class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h4>Loading deliveries...</h4>
+                <p>Please wait</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Location Button -->
+    <button class="location-btn" id="locationBtn" onclick="toggleMyLocation()">
+        <i class="fas fa-location-arrow"></i>
+        <span>Show My Location</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// Global variables
+let map;
+let markers = {};
+let myLocationMarker = null;
+let watchId = null;
+let deliveries = [];
+
+// Initialize map
+function initMap() {
+    // Default center (Manila, Philippines)
+    const defaultLat = 14.5995;
+    const defaultLng = 120.9842;
+    
+    // Create map
+    map = L.map('deliveryMap', {
+        zoomControl: true,
+        attributionControl: true
+    }).setView([defaultLat, defaultLng], 12);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Load deliveries
+    loadDeliveries();
+    
+    // Refresh every 30 seconds
+    setInterval(loadDeliveries, 30000);
+}
+
+// Load deliveries from API
+function loadDeliveries() {
+    fetch('/rider/api/active-deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                deliveries = data.deliveries || [];
+                updateDeliveryList();
+                updateMapMarkers();
+            } else {
+                showEmptyState();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading deliveries:', error);
+            showEmptyState();
+        });
+}
+
+// Update delivery list
+function updateDeliveryList() {
+    const listContainer = document.getElementById('deliveryList');
+    const countBadge = document.getElementById('deliveryCount');
+    
+    countBadge.textContent = deliveries.length;
+    
+    if (deliveries.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    let html = '';
+    deliveries.forEach(delivery => {
+        html += `
+            <div class="delivery-card" id="card-${delivery.id}" onclick="focusDelivery(${delivery.id})">
+                <div class="delivery-header">
+                    <span class="order-number">${delivery.order_number}</span>
+                    <span class="status-badge status-${delivery.status}">${formatStatus(delivery.status)}</span>
+                </div>
+                <div class="delivery-info">
+                    <i class="fas fa-user"></i>
+                    <span>${delivery.buyer_name}</span>
+                </div>
+                <div class="delivery-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${delivery.address}</span>
+                </div>
+                <div class="delivery-info">
+                    <i class="fas fa-phone"></i>
+                    <span>${delivery.buyer_phone || 'No phone'}</span>
+                </div>
+                <div class="delivery-actions">
+                    <button class="btn-navigate" onclick="event.stopPropagation(); navigateToDelivery(${delivery.latitude}, ${delivery.longitude})">
+                        <i class="fas fa-directions"></i> Navigate
+                    </button>
+                    ${delivery.buyer_phone ? `<button class="btn-call" onclick="event.stopPropagation(); callBuyer('${delivery.buyer_phone}')">
+                        <i class="fas fa-phone"></i>
+                    </button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    listContainer.innerHTML = html;
+}
+
+// Update map markers
+function updateMapMarkers() {
+    // Clear existing markers
+    Object.values(markers).forEach(marker => map.removeLayer(marker));
+    markers = {};
+    
+    if (deliveries.length === 0) return;
+    
+    let bounds = [];
+    
+    deliveries.forEach(delivery => {
+        const lat = delivery.latitude || 14.5995;
+        const lng = delivery.longitude || 120.9842;
+        
+        // Create custom icon
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 3px solid white;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    font-weight: 700;
+                    font-size: 14px;
+                ">
+                    <i class="fas fa-box"></i>
+                </div>
+            `,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        });
+        
+        // Create marker
+        const marker = L.marker([lat, lng], { icon: icon }).addTo(map);
+        
+        // Create popup
+        const popupContent = `
+            <div class="popup-header">${delivery.order_number}</div>
+            <div class="popup-info">
+                <i class="fas fa-user"></i>
+                <span>${delivery.buyer_name}</span>
+            </div>
+            <div class="popup-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${delivery.address}</span>
+            </div>
+            <div class="popup-info">
+                <i class="fas fa-box"></i>
+                <span>${delivery.item_count} item(s)</span>
+            </div>
+            <button class="popup-btn" onclick="navigateToDelivery(${lat}, ${lng})">
+                <i class="fas fa-directions"></i> Get Directions
+            </button>
+        `;
+        
+        marker.bindPopup(popupContent, {
+            maxWidth: 250,
+            className: 'custom-popup'
+        });
+        
+        markers[delivery.id] = marker;
+        bounds.push([lat, lng]);
+    });
+    
+    // Fit map to show all markers
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [80, 80] });
+    }
+}
+
+// Focus on specific delivery
+function focusDelivery(deliveryId) {
+    // Remove active class from all cards
+    document.querySelectorAll('.delivery-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Add active class to selected card
+    const card = document.getElementById(`card-${deliveryId}`);
+    if (card) {
+        card.classList.add('active');
+    }
+    
+    // Focus map on marker
+    const marker = markers[deliveryId];
+    if (marker) {
+        map.setView(marker.getLatLng(), 16, { animate: true });
+        marker.openPopup();
+    }
+}
+
+// Navigate to delivery
+function navigateToDelivery(lat, lng) {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    window.open(url, '_blank');
+}
+
+// Call buyer
+function callBuyer(phone) {
+    window.location.href = `tel:${phone}`;
+}
+
+// Format status
+function formatStatus(status) {
+    const statusMap = {
+        'confirmed': 'Confirmed',
+        'preparing': 'Preparing',
+        'for_pickup': 'For Pickup',
+        'picked_up': 'Picked Up',
+        'on_delivery': 'On Delivery'
+    };
+    return statusMap[status] || status;
+}
+
+// Show empty state
+function showEmptyState() {
+    const listContainer = document.getElementById('deliveryList');
+    const countBadge = document.getElementById('deliveryCount');
+    
+    countBadge.textContent = '0';
+    
+    listContainer.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h4>No Active Deliveries</h4>
+            <p>Accepted deliveries will appear here</p>
+        </div>
+    `;
+}
+
+// Toggle my location
+function toggleMyLocation() {
+    const btn = document.getElementById('locationBtn');
+    const btnText = btn.querySelector('span');
+    const btnIcon = btn.querySelector('i');
+    
+    if (watchId === null) {
+        // Start tracking
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+        
+        btn.classList.add('active');
+        btnIcon.className = 'fas fa-spinner fa-spin';
+        btnText.textContent = 'Locating...';
+        
+        watchId = navigator.geolocation.watchPosition(
+            position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                if (myLocationMarker) {
+                    myLocationMarker.setLatLng([lat, lng]);
+                } else {
+                    const icon = L.divIcon({
+                        className: 'my-location-marker',
+                        html: `
+                            <div style="position: relative;">
+                                <div style="
+                                    background: #3b82f6;
+                                    width: 20px;
+                                    height: 20px;
+                                    border-radius: 50%;
+                                    border: 4px solid white;
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                                "></div>
+                                <div style="
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    background: rgba(59, 130, 246, 0.2);
+                                    animation: pulse 2s infinite;
+                                "></div>
+                            </div>
+                        `,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+                    
+                    myLocationMarker = L.marker([lat, lng], { icon: icon }).addTo(map);
+                    myLocationMarker.bindPopup('<strong><i class="fas fa-location-arrow"></i> Your Location</strong>');
+                    map.setView([lat, lng], 15);
+                }
+                
+                btnIcon.className = 'fas fa-location-arrow';
+                btnText.textContent = 'Hide Location';
+            },
+            error => {
+                console.error('Location error:', error);
+                alert('Unable to get location. Please enable GPS.');
+                btn.classList.remove('active');
+                btnIcon.className = 'fas fa-location-arrow';
+                btnText.textContent = 'Show My Location';
+                watchId = null;
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 5000
+            }
+        );
+    } else {
+        // Stop tracking
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        
+        if (myLocationMarker) {
+            map.removeLayer(myLocationMarker);
+            myLocationMarker = null;
+        }
+        
+        btn.classList.remove('active');
+        btnIcon.className = 'fas fa-location-arrow';
+        btnText.textContent = 'Show My Location';
+    }
+}
+
+// Add pulse animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+});
+</script>
+{% endblock %}

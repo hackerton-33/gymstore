@@ -1,0 +1,124 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-plus-circle me-2 text-primary"></i>Create System Announcement
+                    </h1>
+                    <p class="text-muted mb-0">Broadcast a message to platform users</p>
+                </div>
+                <a href="{{ url_for('admin_announcements') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+
+            <!-- Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('admin_create_announcement') }}">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control form-control-lg" 
+                                   placeholder="Enter announcement title" required maxlength="200">
+                            <small class="text-muted">Clear and concise title for the announcement</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Message <span class="text-danger">*</span></label>
+                            <textarea name="message" class="form-control" rows="5" 
+                                      placeholder="Enter your announcement message" required></textarea>
+                            <small class="text-muted">Detailed message content</small>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Announcement Type <span class="text-danger">*</span></label>
+                                <select name="announcement_type" class="form-select" required>
+                                    <option value="">Select type...</option>
+                                    <option value="maintenance">🔧 Maintenance</option>
+                                    <option value="update">✨ Update/New Feature</option>
+                                    <option value="promotion">🎉 Promotion</option>
+                                    <option value="warning">⚠️ Warning</option>
+                                    <option value="info">ℹ️ Information</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Priority</label>
+                                <select name="priority" class="form-select">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Target Audience</label>
+                            <select name="target_audience" class="form-select">
+                                <option value="all" selected>All Users</option>
+                                <option value="buyer">Buyers Only</option>
+                                <option value="seller">Sellers Only</option>
+                                <option value="rider">Riders Only</option>
+                            </select>
+                            <small class="text-muted">Choose who will receive this announcement</small>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Start Date & Time</label>
+                                <input type="datetime-local" name="start_date" class="form-control" 
+                                       value="{{ now().strftime('%Y-%m-%dT%H:%M') }}">
+                                <small class="text-muted">When to start showing</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">End Date & Time (Optional)</label>
+                                <input type="datetime-local" name="end_date" class="form-control">
+                                <small class="text-muted">Auto-hide after this date</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="show_on_dashboard" class="form-check-input" 
+                                       id="showDashboard" checked>
+                                <label class="form-check-label" for="showDashboard">
+                                    <strong>Show on Dashboard</strong>
+                                    <small class="d-block text-muted">Display in user dashboards</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="show_as_popup" class="form-check-input" 
+                                       id="showPopup">
+                                <label class="form-check-label" for="showPopup">
+                                    <strong>Show as Popup</strong>
+                                    <small class="d-block text-muted">Display as modal when users login</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> This announcement will be sent as a notification to all selected users and will be visible based on your display settings.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-paper-plane me-2"></i>Create & Send Announcement
+                            </button>
+                            <a href="{{ url_for('admin_announcements') }}" class="btn btn-outline-secondary btn-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

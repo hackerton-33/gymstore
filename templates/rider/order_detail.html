@@ -1,0 +1,325 @@
+{% extends "rider/base.html" %}
+
+{% block title %}Order {{ order.order_number }} - Rider Dashboard{% endblock %}
+
+{% block rider_content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Order {{ order.order_number }}</h1>
+            <p class="text-muted mb-0">Delivery Details</p>
+        </div>
+        <div>
+            {% if order.status == 'picked_up' %}
+            <span class="badge bg-warning text-dark fs-6">Picked Up</span>
+            {% elif order.status == 'on_delivery' %}
+            <span class="badge bg-info text-dark fs-6">On Delivery</span>
+            {% elif order.status == 'delivered' %}
+            <span class="badge bg-success fs-6">Delivered</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Order Info -->
+        <div class="col-lg-8">
+            <!-- Customer Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user me-2"></i>Customer Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> {{ order.buyer.username }}</p>
+                            <p><strong>Email:</strong> {{ order.buyer.email }}</p>
+                            <p><strong>Phone:</strong> {{ order.buyer.phone_number or 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Delivery Address:</strong></p>
+                            <p class="text-muted">{{ order.shipping_address }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-shopping-bag me-2"></i>Order Items
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.order_items %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₱{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td>₱{{ "%.2f"|format(item.total_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>₱{{ "%.2f"|format(order.total_amount) }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Notes -->
+            {% if order.notes %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-sticky-note me-2"></i>Delivery Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ order.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions -->
+        <div class="col-lg-4">
+            <!-- Delivery Status Update -->
+            {% if order.status in ['picked_up', 'on_delivery'] and order.rider_id == session.user_id %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-primary text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-tasks me-2"></i>Update Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if order.status == 'picked_up' %}
+                    <button onclick="updateStatus('on_delivery')" class="btn btn-info w-100 mb-2">
+                        <i class="fas fa-motorcycle me-1"></i>Start Delivery
+                    </button>
+                    {% endif %}
+                    
+                    {% if order.status in ['picked_up', 'on_delivery'] %}
+                    <button onclick="markAsDelivered()" class="btn btn-success w-100">
+                        <i class="fas fa-check-circle me-1"></i>Mark as Delivered
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Earnings Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-dollar-sign me-2"></i>Your Earnings
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-0">₱{{ "%.2f"|format(order.total_amount|float * 0.05) }}</h3>
+                    <small class="text-muted">Commission (5%)</small>
+                </div>
+            </div>
+
+            <!-- Contact Customer -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-comment me-2"></i>Communication
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('chat_conversation', other_user_id=order.buyer.id) }}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-envelope me-1"></i>Message Customer
+                    </a>
+                    {% if order.buyer.phone %}
+                    <a href="tel:{{ order.buyer.phone }}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-phone me-1"></i>Call Customer
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Message Sellers -->
+                    {% set seller_ids = [] %}
+                    {% for item in order.order_items %}
+                        {% if item.seller_id not in seller_ids %}
+                            {% set _ = seller_ids.append(item.seller_id) %}
+                            <a href="{{ url_for('chat_conversation', other_user_id=item.seller_id) }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-store me-1"></i>Message Seller: {{ item.product.seller.business_name or item.product.seller.full_name }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Order Timeline -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-history me-2"></i>Order Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div>
+                                <strong>Order Placed</strong>
+                                <br>
+                                <small class="text-muted">{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                            </div>
+                        </div>
+                        {% if order.rider_id %}
+                        <div class="timeline-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div>
+                                <strong>Accepted by Rider</strong>
+                                <br>
+                                <small class="text-muted">{{ order.updated_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status in ['on_delivery', 'delivered'] %}
+                        <div class="timeline-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div>
+                                <strong>Out for Delivery</strong>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'delivered' %}
+                        <div class="timeline-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div>
+                                <strong>Delivered</strong>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Notes Modal -->
+<div class="modal fade" id="deliveryNotesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Delivery Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="deliveryNotes" class="form-control" rows="4" 
+                          placeholder="Optional notes about the delivery..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmDelivery()">
+                    Confirm Delivery
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.back-button {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    transform: translateX(-3px);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-item i {
+    position: absolute;
+    left: -30px;
+    font-size: 1.2rem;
+}
+
+@media (max-width: 576px) {
+    .back-button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+    .back-text {
+        display: none;
+    }
+}
+</style>
+
+<script>
+function updateStatus(newStatus) {
+    if (!confirm('Update delivery status?')) return;
+    
+    fetch(`/rider/orders/{{ order.id }}/update-status`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+
+function markAsDelivered() {
+    const modal = new bootstrap.Modal(document.getElementById('deliveryNotesModal'));
+    modal.show();
+}
+
+function confirmDelivery() {
+    const notes = document.getElementById('deliveryNotes').value;
+    
+    fetch(`/rider/orders/{{ order.id }}/update-status`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status: 'delivered', notes: notes })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+</script>
+{% endblock %}

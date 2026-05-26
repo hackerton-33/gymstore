@@ -1,0 +1,302 @@
+{% extends "buyer/base.html" %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-4">Checkout</h1>
+        </div>
+    </div>
+    
+    <form method="POST" id="checkoutForm">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Shipping Information</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if saved_addresses %}
+                        <div class="mb-3">
+                            <label for="saved_address_select" class="form-label">Select Saved Address</label>
+                            <select class="form-select" id="saved_address_select" onchange="fillAddress(this.value)">
+                                <option value="">-- Choose a saved address or enter manually --</option>
+                                {% for address in saved_addresses %}
+                                <option value="{{ loop.index0 }}" 
+                                        data-address="{{ address.address_line_1 }}{% if address.address_line_2 %}, {{ address.address_line_2 }}{% endif %}, {{ address.city }}, {{ address.state }} {{ address.zip_code }}, {{ address.country }}"
+                                        {% if address.is_default %}selected{% endif %}>
+                                    {{ address.label }}{% if address.is_default %} (Default){% endif %} - {{ address.address_line_1 }}, {{ address.city }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="shipping_address" class="form-label">Shipping Address *</label>
+                            <textarea class="form-control" id="shipping_address" name="shipping_address" rows="3" required>{{ current_user.address or '' }}</textarea>
+                            <small class="form-text text-muted">Please provide a complete delivery address</small>
+                        </div>
+                        
+                        {% if not saved_addresses %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>Tip: Save this address for faster checkout next time!</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Payment Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cash_on_delivery" checked>
+                            <label class="form-check-label" for="cod">
+                                <i class="fas fa-money-bill-wave me-2"></i>Cash on Delivery (COD)
+                            </label>
+                        </div>
+                        <input type="hidden" name="payment_method" value="cash_on_delivery">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for item in cart_products %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <small>{{ item.product.name }}</small>
+                                <br>
+                                <small class="text-muted">Qty: {{ item.quantity }}</small>
+                            </div>
+                            <span>₱{{ "%.2f"|format(item.subtotal) }}</span>
+                        </div>
+                        {% endfor %}
+                        
+                        <hr>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span id="subtotal-display">₱{{ "%.2f"|format(total) }}</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping:</span>
+                            <span id="shipping-display">Free</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Tax (8%):</span>
+                            <span id="tax-display">₱{{ "%.2f"|format(total * 0.08) }}</span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong class="text-primary" id="total-display">₱{{ "%.2f"|format(total * 1.08) }}</strong>
+                        </div>
+                        
+                        <input type="hidden" name="total" id="final-total" value="{{ total * 1.08 }}" data-subtotal="{{ total or 0 }}">
+                        <input type="hidden" name="coupon_code" id="applied-coupon-code" value="">
+                        <input type="hidden" name="points_redeemed" id="applied-points" value="0">
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-check-circle me-2"></i>Place Order
+                        </button>
+                        <a href="{{ url_for('buyer_cart') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Validation System -->
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize validation utilities
+    const { showSuccess, showError, showWarning, showConfirm, showLoading, showToast } = window.ValidationUtils;
+
+    const baseSubtotal = parseFloat($('#final-total').data('subtotal')) || 0;
+    let couponDiscount = 0;
+    let pointsDiscount = 0;
+    let appliedCouponId = null;
+    
+
+    
+    // Update totals
+    function updateTotals() {
+        const subtotal = baseSubtotal;
+        const afterDiscounts = subtotal - couponDiscount - pointsDiscount;
+        const tax = afterDiscounts * 0.08;
+        const total = afterDiscounts + tax;
+        
+        $('#subtotal-display').text('$' + subtotal.toFixed(2));
+        $('#tax-display').text('$' + tax.toFixed(2));
+        $('#total-display').text('$' + total.toFixed(2));
+        $('#final-total').val(total.toFixed(2));
+        
+        // Show/hide discount rows
+        if (couponDiscount > 0) {
+            $('#coupon-discount-row').css('display', 'flex');
+            $('#coupon-discount-display').text('-$' + couponDiscount.toFixed(2));
+        } else {
+            $('#coupon-discount-row').css('display', 'none');
+        }
+        
+        if (pointsDiscount > 0) {
+            $('#points-discount-row').css('display', 'flex');
+            $('#points-discount-display').text('-$' + pointsDiscount.toFixed(2));
+        } else {
+            $('#points-discount-row').css('display', 'none');
+        }
+    }
+    
+    // Apply coupon
+    $('#apply-coupon-btn').click(function() {
+        const code = $('#coupon-code').val().trim().toUpperCase();
+        
+        if (!code) {
+            $('#coupon-message').html('<span class="text-danger">Please enter a coupon code</span>');
+            return;
+        }
+        
+        $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Applying...');
+        
+        $.ajax({
+            url: '/api/coupon/validate',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                code: code,
+                cart_total: baseSubtotal
+            }),
+            success: function(response) {
+                if (response.valid) {
+                    couponDiscount = response.discount_amount;
+                    appliedCouponId = response.coupon_id;
+                    $('#applied-coupon-code').val(code);
+                    $('#coupon-message').html('<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + response.message + '</span>');
+                    $('#coupon-code').prop('disabled', true);
+                    $('#apply-coupon-btn').html('Applied').removeClass('btn-outline-primary').addClass('btn-success');
+                    updateTotals();
+                } else {
+                    $('#coupon-message').html('<span class="text-danger"><i class="fas fa-times-circle me-1"></i>' + response.message + '</span>');
+                    $('#apply-coupon-btn').prop('disabled', false).html('Apply');
+                }
+            },
+            error: function() {
+                $('#coupon-message').html('<span class="text-danger">An error occurred. Please try again.</span>');
+                $('#apply-coupon-btn').prop('disabled', false).html('Apply');
+            }
+        });
+    });
+    
+    // Apply points
+    $('#apply-points-btn').click(function() {
+        const pointsToRedeem = parseInt($('#points-redeem').val() || '0');
+        const maxPoints = parseInt($('#points-redeem').attr('max'));
+        
+        if (pointsToRedeem <= 0) {
+            $('#points-message').html('<span class="text-danger">Please enter points to redeem</span>');
+            return;
+        }
+        
+        if (pointsToRedeem > maxPoints) {
+            $('#points-message').html('<span class="text-danger">You don\'t have enough points</span>');
+            return;
+        }
+        
+        // 100 points = $1
+        pointsDiscount = pointsToRedeem / 100;
+        $('#applied-points').val(pointsToRedeem);
+        $('#points-message').html('<span class="text-success"><i class="fas fa-check-circle me-1"></i>Applied ' + pointsToRedeem + ' points!</span>');
+        $('#points-redeem').prop('disabled', true);
+        $(this).html('Applied').removeClass('btn-outline-success').addClass('btn-success');
+        updateTotals();
+    });
+    
+    // Form validation
+    $('#checkoutForm').on('submit', function(e) {
+        e.preventDefault();
+
+        // Check if cart is empty
+        if (baseSubtotal <= 0) {
+            showWarning('Empty Cart', 'Your cart is empty. Please add items before checking out.');
+            return;
+        }
+
+        // Validate shipping address
+        const shippingAddress = $('#shipping_address').val().trim();
+        if (!shippingAddress || shippingAddress.length < 10) {
+            showWarning('Invalid Address', 'Please provide a complete shipping address');
+            return;
+        }
+
+        // Validate payment method
+        const paymentMethod = $('input[name="payment_method"]:checked').val();
+        if (!paymentMethod) {
+            showWarning('Payment Method Required', 'Please select a payment method');
+            return;
+        }
+
+        // Show confirmation dialog
+        showConfirm(
+            'Confirm Order',
+            `You are about to place an order for $${$('#total-display').text().replace('$', '')}. Continue?`,
+            'Yes, Place Order',
+            'Cancel'
+        ).then((confirmed) => {
+            if (confirmed) {
+                showLoading('Processing your order...');
+                setTimeout(() => {
+                    this.submit();
+                }, 500);
+            }
+        });
+    });
+
+    // Initialize
+    updateTotals();
+});
+
+// Fill address from saved addresses dropdown
+function fillAddress(index) {
+    const select = document.getElementById('saved_address_select');
+    const textarea = document.getElementById('shipping_address');
+    
+    if (index === '') {
+        // Clear the textarea if "Choose a saved address" is selected
+        textarea.value = '';
+        return;
+    }
+    
+    const selectedOption = select.options[select.selectedIndex];
+    const address = selectedOption.getAttribute('data-address');
+    
+    if (address) {
+        textarea.value = address;
+    }
+}
+
+// Auto-fill default address on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('saved_address_select');
+    if (select && select.value) {
+        fillAddress(select.value);
+    }
+});
+</script>
+{% endblock %}

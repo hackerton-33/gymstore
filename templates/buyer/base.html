@@ -1,0 +1,2167 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<!-- Smart Search Styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/smart-search.css') }}?v=2.0">
+
+<!-- Auto-hide Header on Scroll -->
+<style>
+    /* Remove left space - fix body and layout */
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden;
+    }
+    
+    .buyer-layout {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100%;
+    }
+    
+    /* Smooth header animation */
+    .navbar.fixed-top {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1030 !important;
+        transition: transform 0.3s ease-in-out !important;
+        will-change: transform;
+    }
+    
+    .navbar.fixed-top.header-hidden {
+        transform: translateY(-100%) !important;
+    }
+    
+    .navbar.fixed-top.header-visible {
+        transform: translateY(0) !important;
+    }
+    
+    /* User Profile Dropdown Link Hover */
+    .dropdown-menu a[href*="buyer_profile"]:hover {
+        background: #f8f9fa !important;
+    }
+    
+    /* Guest Mode Alert Styling */
+    .swal2-actions {
+        gap: 10px !important;
+    }
+    
+    .swal2-styled.btn {
+        padding: 10px 24px !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .swal2-styled.btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Sort Tabs Styling */
+    .sort-tabs-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 8px 16px;
+        margin-bottom: 20px;
+    }
+
+    .sort-tab {
+        background: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid #e0e0e0;
+    }
+
+    .sort-tab:hover {
+        background: #f5f5f5;
+        border-color: #d0d0d0;
+    }
+
+    .sort-tab.active {
+        background: #ee4d2d;
+        color: white;
+        border-color: #ee4d2d;
+    }
+
+    .sort-tab.active:hover {
+        background: #d73211;
+        border-color: #d73211;
+    }
+    
+    /* Price dropdown button - wider */
+    .sort-tab-dropdown {
+        min-width: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .sort-tab-dropdown i {
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    
+    /* Filters button - matches sort tabs */
+    .sort-tab-filter {
+        min-width: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .sort-tab-filter i {
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    
+    .sort-tab-filter .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    /* Dropdown menu styling */
+    .sort-tabs-container .dropdown-menu {
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 4px 0;
+        min-width: 180px;
+    }
+    
+    .sort-tabs-container .dropdown-item {
+        padding: 8px 16px;
+        font-size: 14px;
+        color: #333;
+        transition: all 0.2s ease;
+    }
+    
+    .sort-tabs-container .dropdown-item:hover {
+        background: #f5f5f5;
+        color: #333;
+    }
+    
+    .sort-tabs-container .dropdown-item:active {
+        background: #ee4d2d;
+        color: white;
+    }
+    
+    /* Filter Dropdown Menu */
+    .filter-dropdown-menu {
+        min-width: 280px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 0;
+    }
+    
+    .filter-dropdown-menu .dropdown-header {
+        font-size: 16px;
+        font-weight: 600;
+        color: #666;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+    
+    .category-filter-dropdown {
+        padding: 8px 0;
+    }
+    
+    .filter-dropdown-menu .category-filter-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    
+    .filter-dropdown-menu .category-filter-item:hover {
+        background: #f5f5f5;
+    }
+    
+    .filter-dropdown-menu .category-filter-item .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+        cursor: pointer;
+        border: 2px solid #d0d0d0;
+    }
+    
+    .filter-dropdown-menu .category-filter-item .form-check-input:checked {
+        background-color: #1a73e8;
+        border-color: #1a73e8;
+    }
+    
+    .filter-dropdown-menu .category-filter-item .form-check-label {
+        font-size: 15px;
+        color: #333;
+        cursor: pointer;
+        margin-bottom: 0;
+        flex: 1;
+    }
+    
+    /* Custom 5 columns per row layout */
+    @media (min-width: 992px) {
+        .col-lg-custom-5 {
+            flex: 0 0 auto;
+            width: 20%;
+        }
+    }
+    
+    @media (min-width: 768px) and (max-width: 991px) {
+        .col-md-4 {
+            flex: 0 0 auto;
+            width: 33.333333%;
+        }
+    }
+</style>
+
+<!-- Child template styles -->
+{% block extra_styles %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="buyer-layout">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('buyer_home') }}" style="padding: 0;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Daily Fitness" style="height: 90px; width: auto; margin-top: -15px; margin-bottom: -15px;">
+            </a>
+                
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'buyer_home' %}active{% endif %}" href="{{ url_for('buyer_home') }}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'buyer_shop' %}active{% endif %}" href="{{ url_for('buyer_shop') }}">
+                            <i class="fas fa-store me-1"></i>Shop
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'buyer_occasions' %}active{% endif %}" href="{{ url_for('buyer_occasions') }}">
+                            <i class="fas fa-gift me-1"></i>Occasions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'buyer_collections' %}active{% endif %}" href="{{ url_for('buyer_collections') }}">
+                            <i class="fas fa-th-large me-1"></i>Collections
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'buyer_about' %}active{% endif %}" href="{{ url_for('buyer_about') }}">
+                            <i class="fas fa-info-circle me-1"></i>About Us
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Smart Search Bar with Autocomplete -->
+                <form action="{{ url_for('buyer_shop') }}" method="GET" class="position-relative me-3" style="width: 450px;">
+                    <input class="form-control" type="search" name="search" id="smart-search-input" placeholder="Search products, brands..." autocomplete="off" style="background: white; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px;">
+                    <div id="search-suggestions" class="position-absolute bg-white shadow-lg rounded-3 mt-1 w-100" style="max-height: 400px; overflow-y: auto; z-index: 9999 !important; display: none; left: 0; top: 100%; border: 1px solid #e0e0e0; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+                </form>
+                
+                <!-- Notifications Dropdown -->
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-light position-relative" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count" style="display: none; font-size: 0.7rem; min-width: 20px; height: 20px; padding: 4px;">
+                            0
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown" style="width: 380px; max-height: 500px; overflow-y: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: 1px solid #e0e0e0;">
+                        <div class="dropdown-header d-flex justify-content-between align-items-center" style="background: #f8f9fa; padding: 12px 16px; border-bottom: 1px solid #e0e0e0;">
+                            <h6 class="mb-0" style="font-weight: 600; color: #333;">
+                                <i class="fas fa-bell me-2"></i>Notifications
+                            </h6>
+                            <a href="{{ url_for('notification_center') }}" class="btn btn-sm btn-link text-primary" style="font-size: 0.85rem; text-decoration: none;">View All</a>
+                        </div>
+                        <div id="notification-list" style="max-height: 400px; overflow-y: auto; padding: 8px 0;">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Support & Request -->
+                <a href="{{ url_for('support_tickets') }}" class="btn btn-outline-light me-2" title="Support & Request">
+                    <i class="fas fa-headset"></i>
+                </a>
+                
+                <!-- Cart -->
+                <a href="{{ url_for('buyer_cart') }}" class="btn btn-outline-light me-2 position-relative" title="Shopping Cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count" style="display: none; font-size: 0.7rem; min-width: 20px; height: 20px; padding: 4px;">
+                        0
+                    </span>
+                </a>
+                
+                <!-- User Menu -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>
+                        {% if current_user %}{{ current_user.first_name }}{% else %}Guest{% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if current_user %}
+                        <li class="px-3 py-2 border-bottom">
+                            <a href="{{ url_for('buyer_profile') }}" class="text-decoration-none" style="display: block; transition: background 0.2s ease; padding: 4px; border-radius: 6px; margin: -4px;">
+                                <div class="d-flex align-items-center" style="cursor: pointer;">
+                                    {% if current_user.profile_image %}
+                                    <img src="{{ current_user.profile_image }}" class="rounded-circle me-2" width="40" height="40" alt="Profile" style="object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                        {{ current_user.first_name[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong style="color: #333;">{{ current_user.full_name }}</strong>
+                                        <div class="small text-muted">{{ current_user.email }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li><a class="dropdown-item" href="{{ url_for('buyer_profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('buyer_orders') }}"><i class="fas fa-shopping-bag me-2"></i>My Orders</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('buyer_profile_wishlist') }}"><i class="fas fa-heart me-2"></i>Wishlist</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('buyer_profile_addresses') }}"><i class="fas fa-map-marker-alt me-2"></i>Addresses</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        {% else %}
+                        <li class="px-3 py-2 border-bottom">
+                            <div class="text-center">
+                                <strong>Welcome, Guest!</strong>
+                                <div class="small text-muted">Please log in to access all features</div>
+                            </div>
+                        </li>
+                        <li><a class="dropdown-item" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('register') }}"><i class="fas fa-user-plus me-2"></i>Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content" style="margin-top: 100px; padding: 0 !important; margin-left: 0 !important; margin-right: 0 !important; width: 100% !important;">
+        {% block buyer_content %}{% endblock %}
+    </main>
+    
+    <!-- Floating Chat Button (Shopee Style) -->
+    <button class="floating-chat-btn" onclick="toggleChatWidget()" title="Chat">
+        <i class="fas fa-comments"></i>
+        <span class="chat-text">Chat</span>
+        <span class="chat-notification-badge" id="floating-chat-badge" style="display: flex;">0</span>
+    </button>
+
+<!-- Ensure chat notification loads on all buyer pages -->
+<script>
+// Test function to manually show badge (for debugging)
+window.testShowBadge = function(count) {
+    const badge = document.getElementById('floating-chat-badge');
+    if (badge) {
+        badge.textContent = count || '5';
+        badge.style.display = 'flex';
+        badge.style.visibility = 'visible';
+        badge.style.opacity = '1';
+        console.log('✅ Test badge shown with count:', count || '5');
+    } else {
+        console.error('❌ Badge element not found!');
+    }
+};
+
+(function() {
+    function initBuyerChatNotification() {
+        console.log('🚀 Initializing buyer chat notification...');
+        
+        // Check if badge element exists
+        const badge = document.getElementById('floating-chat-badge');
+        if (badge) {
+            console.log('✓ Floating chat badge element found:', badge);
+            console.log('  - Current display:', badge.style.display);
+            console.log('  - Current text:', badge.textContent);
+        } else {
+            console.error('✗ Floating chat badge element NOT found in DOM!');
+            return;
+        }
+        
+        if (typeof $ !== 'undefined' && typeof loadUnreadMessageCount === 'function') {
+            console.log('✓ jQuery and loadUnreadMessageCount available, loading now...');
+            loadUnreadMessageCount();
+            
+            // Set up auto-refresh
+            setInterval(loadUnreadMessageCount, 30000);
+            console.log('✓ Auto-refresh set up (every 30 seconds)');
+        } else {
+            console.log('⏳ Waiting for jQuery and loadUnreadMessageCount...');
+            setTimeout(initBuyerChatNotification, 100);
+        }
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBuyerChatNotification);
+    } else {
+        initBuyerChatNotification();
+    }
+})();
+
+console.log('💬 Buyer chat notification script loaded. Type testShowBadge(14) in console to test.');
+
+// DIRECT API CALL - Update badge without opening chat
+function updateFloatingBadgeDirectly() {
+    fetch('/chat/api/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            const unreadCount = data.unread_count || 0;
+            const floatingBadge = document.getElementById('floating-chat-badge');
+            
+            if (floatingBadge) {
+                if (unreadCount > 0) {
+                    const displayText = unreadCount > 99 ? '99+' : unreadCount.toString();
+                    floatingBadge.textContent = displayText;
+                    floatingBadge.style.display = 'flex';
+                    console.log('✅ Floating badge updated via API:', displayText);
+                } else {
+                    floatingBadge.style.display = 'none';
+                    console.log('ℹ️ No unread messages, badge hidden');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching unread count:', error);
+        });
+}
+
+// Update immediately on page load
+setTimeout(updateFloatingBadgeDirectly, 500);
+
+// Update every 10 seconds
+setInterval(updateFloatingBadgeDirectly, 10000);
+
+console.log('✅ Direct API polling started - updates every 10 seconds');
+</script>
+    
+    <!-- Chat Widget Modal (Shopee Style) -->
+    <div id="chatWidget" class="chat-widget" style="display: none;">
+        <!-- Conversation List View -->
+        <div id="chatListView">
+            <div class="chat-widget-header">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-comments me-2"></i>
+                    <span class="fw-bold">Chat</span>
+                    <span class="ms-2 badge bg-light text-dark" id="chat-count-widget">0</span>
+                </div>
+                <button class="btn-close-chat" onclick="toggleChatWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-widget-body">
+                <div class="chat-search">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search name" id="chatSearchInput">
+                </div>
+                <div class="chat-list" id="chatConversationList">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading conversations...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-widget-footer">
+                <a href="{{ url_for('chat_index') }}" class="btn btn-sm btn-primary w-100">
+                    View All Messages
+                </a>
+            </div>
+        </div>
+        
+        <!-- Conversation Messages View -->
+        <div id="chatMessagesView" style="display: none;">
+            <div class="chat-widget-header">
+                <button class="btn-back-chat" onclick="backToConversationList()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="d-flex align-items-center flex-grow-1 ms-2">
+                    <div class="chat-avatar-small me-2" id="chatUserAvatar"></div>
+                    <span class="fw-bold" id="chatUserName"></span>
+                </div>
+                <button class="btn-close-chat" onclick="toggleChatWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-messages-container" id="chatMessagesContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="form-control" id="chatMessageInput" placeholder="Type a message...">
+                <button class="btn btn-primary" onclick="sendWidgetMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-dumbbell me-2"></i>Daily Fitness</h5>
+                    <p>Your ultimate destination for premium gym equipment, supplements, and accessories.</p>
+                    <div class="social-links mt-3">
+                        <a href="#" class="text-light me-3" title="Facebook"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#" class="text-light me-3" title="Instagram"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-light me-3" title="Twitter"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-light" title="YouTube"><i class="fab fa-youtube fa-lg"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('buyer_home') }}" class="text-light">Home</a></li>
+                        <li><a href="{{ url_for('buyer_shop') }}" class="text-light">Shop</a></li>
+                        <li><a href="{{ url_for('buyer_about') }}" class="text-light">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Contact</h6>
+                    <p><i class="fas fa-envelope me-2"></i>support@gymstore.com</p>
+                    <p><i class="fas fa-phone me-2"></i>1-800-GYM-STORE</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2024 Daily Fitness. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <style>
+    .social-links a {
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
+    
+    .social-links a:hover {
+        transform: translateY(-3px);
+        color: #667eea !important;
+    }
+    </style>
+</div>
+
+<!-- Buyer-specific Scripts -->
+<script>
+// Wait for jQuery to load before initializing search
+(function() {
+    function initSmartSearch() {
+        if (typeof $ === 'undefined' || typeof jQuery === 'undefined') {
+            console.log('Waiting for jQuery to load...');
+            setTimeout(initSmartSearch, 100);
+            return;
+        }
+        
+        console.log('Initializing Smart Search...');
+        
+        // Smart Search Autocomplete
+        let searchTimeout;
+        const searchInput = $('#smart-search-input');
+        const suggestionsBox = $('#search-suggestions');
+
+        searchInput.on('input', function() {
+            const query = $(this).val().trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                suggestionsBox.hide();
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                $.ajax({
+                    url: '/api/search/autocomplete',
+                    method: 'GET',
+                    data: { q: query },
+                    success: function(response) {
+                        displaySearchSuggestions(response.suggestions);
+                    }
+                });
+            }, 300);
+        });
+        
+        // Hide suggestions when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#smart-search-input, #search-suggestions').length) {
+                suggestionsBox.hide();
+            }
+        });
+    }
+    
+    // Start initialization
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSmartSearch);
+    } else {
+        initSmartSearch();
+    }
+})();
+
+function displaySearchSuggestions(suggestions) {
+    if (suggestions.length === 0) {
+        suggestionsBox.hide();
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    
+    suggestions.forEach(item => {
+        if (item.type === 'product') {
+            html += `
+                <a href="${item.url}" class="list-group-item list-group-item-action">
+                    <div class="d-flex align-items-center">
+                        ${item.image_url ? `<img src="${item.image_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; display: block; flex-shrink: 0;" class="me-3">` : '<div style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" class="me-3"><i class="fas fa-image text-muted"></i></div>'}
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${item.name}</div>
+                            <small class="text-muted">${item.brand || ''} · ${item.category}</small>
+                        </div>
+                        <div class="text-primary fw-bold">$${item.price.toFixed(2)}</div>
+                    </div>
+                </a>
+            `;
+        } else if (item.type === 'category') {
+            html += `
+                <a href="${item.url}" class="list-group-item list-group-item-action">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-tag me-2 text-secondary"></i>
+                        <div class="flex-grow-1">
+                            <div>${item.name}</div>
+                            <small class="text-muted">Category</small>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }
+    });
+    
+    html += '</div>';
+    suggestionsBox.html(html).show();
+}
+
+// Load Notification Count
+function loadNotificationCount() {
+    console.log('Loading notification count...');
+    $.ajax({
+        url: '/api/notifications',
+        method: 'GET',
+        success: function(response) {
+            console.log('✓ Notification count response:', response);
+            const unreadCount = response.unread_count || 0;
+            const totalCount = response.total_count || 0;
+            console.log('  - Unread:', unreadCount, '| Total:', totalCount);
+            
+            const badge = $('#notification-count');
+            if (unreadCount > 0) {
+                badge.text(unreadCount > 99 ? '99+' : unreadCount).show();
+                console.log('  - Badge shown with count:', unreadCount);
+            } else {
+                badge.hide();
+                console.log('  - Badge hidden (no unread)');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('✗ Failed to load notification count');
+            console.error('  - Status:', status, '| Error:', error);
+            console.error('  - Status Code:', xhr.status);
+        }
+    });
+}
+
+// Load Notifications for Dropdown
+function loadNotificationDropdown() {
+    console.log('Loading notification dropdown...');
+    $.ajax({
+        url: '/api/notifications?limit=5',
+        method: 'GET',
+        success: function(response) {
+            console.log('✓ Notifications API response:', response);
+            console.log('  - Total notifications:', response.notifications ? response.notifications.length : 0);
+            console.log('  - Unread count:', response.unread_count);
+            console.log('  - Total count:', response.total_count);
+            
+            const notifications = response.notifications || [];
+            const listContainer = $('#notification-list');
+            
+            if (notifications.length === 0) {
+                console.log('No notifications to display');
+                listContainer.html(`
+                    <div class="text-center py-5" style="padding: 3rem 2rem;">
+                        <i class="fas fa-bell-slash" style="font-size: 3rem; color: #ddd; margin-bottom: 1rem; display: block;"></i>
+                        <p class="text-muted mb-1" style="font-weight: 600; font-size: 1rem;">No notifications yet</p>
+                        <small class="text-muted" style="font-size: 0.875rem;">We'll notify you when something new arrives</small>
+                    </div>
+                `);
+                return;
+            }
+            
+            console.log('Rendering', notifications.length, 'notifications');
+            
+            try {
+                let html = '';
+                notifications.forEach((notif, index) => {
+                    console.log('Processing notification', index, notif);
+                    const isUnread = !notif.is_read;
+                    const timeAgo = formatTimeAgo(notif.created_at);
+                    const link = notif.action_url || notif.link || '#';
+                    const title = notif.title || 'Notification';
+                    const message = notif.message || '';
+                    
+                    html += `
+                        <a href="${link}" class="dropdown-item" style="padding: 12px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none; display: block; transition: background 0.15s;">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <h6 class="mb-0" style="font-size: 0.9rem; font-weight: ${isUnread ? '600' : '500'}; color: #333;">
+                                    ${isUnread ? '<span class="badge bg-primary me-2" style="font-size: 0.65rem; padding: 2px 6px;">New</span>' : ''}
+                                    ${title}
+                                </h6>
+                                <small class="text-muted" style="font-size: 0.75rem; white-space: nowrap; margin-left: 8px;">${timeAgo}</small>
+                            </div>
+                            <p class="mb-0 small text-muted" style="font-size: 0.85rem; line-height: 1.4;">${message}</p>
+                        </a>
+                    `;
+                });
+                
+                console.log('Generated HTML:', html);
+                listContainer.html(html);
+                
+                // Add hover effect
+                $('#notification-list .dropdown-item').hover(
+                    function() { $(this).css('background', '#f8f9fa'); },
+                    function() { $(this).css('background', 'white'); }
+                );
+            } catch (error) {
+                console.error('Error rendering notifications:', error);
+                listContainer.html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <p class="text-muted mb-0">Error displaying notifications</p>
+                    </div>
+                `);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('✗ Failed to load notifications');
+            console.error('  - Status:', status);
+            console.error('  - Error:', error);
+            console.error('  - Response:', xhr.responseText);
+            console.error('  - Status Code:', xhr.status);
+            
+            let errorMsg = 'Failed to load notifications';
+            if (xhr.status === 401) {
+                errorMsg = 'Please log in to view notifications';
+            } else if (xhr.status === 500) {
+                errorMsg = 'Server error loading notifications';
+            }
+            
+            $('#notification-list').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ddd;"></i>
+                    <p class="text-muted mt-3 mb-0">${errorMsg}</p>
+                    <small class="text-muted">Status: ${xhr.status}</small>
+                </div>
+            `);
+        }
+    });
+}
+
+// Format time ago helper function
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return past.toLocaleDateString();
+}
+
+// Get notification icon based on type
+function getNotificationIcon(type) {
+    const icons = {
+        'order': 'fas fa-shopping-bag',
+        'payment': 'fas fa-credit-card',
+        'delivery': 'fas fa-truck',
+        'message': 'fas fa-comment',
+        'promotion': 'fas fa-tag',
+        'system': 'fas fa-info-circle',
+        'warning': 'fas fa-exclamation-triangle'
+    };
+    return icons[type] || 'fas fa-bell';
+}
+
+// Get notification color based on type
+function getNotificationColor(type) {
+    const colors = {
+        'order': '#667eea',
+        'payment': '#2ecc71',
+        'delivery': '#f39c12',
+        'message': '#3498db',
+        'promotion': '#e74c3c',
+        'system': '#95a5a6',
+        'warning': '#e67e22'
+    };
+    return colors[type] || '#667eea';
+}
+
+// Load notifications when dropdown is opened - using multiple event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationBtn = document.getElementById('notificationDropdown');
+    
+    if (notificationBtn) {
+        console.log('✓ Notification button found, attaching listeners');
+        
+        // Bootstrap dropdown event
+        notificationBtn.addEventListener('show.bs.dropdown', function() {
+            console.log('Dropdown show.bs.dropdown event triggered');
+            loadNotificationDropdown();
+        });
+        
+        // Click event as backup
+        notificationBtn.addEventListener('click', function() {
+            console.log('Dropdown click event triggered');
+            setTimeout(loadNotificationDropdown, 100);
+        });
+    } else {
+        console.error('✗ Notification button not found!');
+    }
+});
+
+// Also use jQuery event as backup
+$(document).on('show.bs.dropdown', '#notificationDropdown', function() {
+    console.log('jQuery dropdown event triggered');
+    const listContainer = $('#notification-list');
+    
+    // Show loading spinner
+    listContainer.html(`
+        <div class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2 mb-0" style="font-size: 0.875rem;">Loading notifications...</p>
+        </div>
+    `);
+    
+    loadNotificationDropdown();
+});
+
+// Load Cart Count
+function loadCartCount() {
+    $.ajax({
+        url: '/api/cart/count',
+        method: 'GET',
+        success: function(response) {
+            const cartCount = response.count || 0;
+            const badge = $('#cart-count');
+            if (cartCount > 0) {
+                badge.text(cartCount > 99 ? '99+' : cartCount).show();
+            } else {
+                badge.hide();
+            }
+        },
+        error: function() {
+            console.log('Failed to load cart count');
+        }
+    });
+}
+
+// Load Unread Message Count
+let previousUnreadCount = 0;
+function loadUnreadMessageCount() {
+    console.log('🔄 Loading unread message count...');
+    
+    $.ajax({
+        url: '/chat/api/unread-count',
+        method: 'GET',
+        success: function(response) {
+            console.log('✓ Unread count API response:', response);
+            const unreadCount = response.unread_count || 0;
+            console.log('📬 Unread messages:', unreadCount);
+            
+            // Show notification if count increased
+            if (unreadCount > previousUnreadCount && previousUnreadCount > 0) {
+                // Show toast notification
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'New message received!',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+            
+            previousUnreadCount = unreadCount;
+            
+            // Update navbar chat badge
+            const chatBadge = $('#chat-unread-count');
+            if (unreadCount > 0) {
+                chatBadge.text(unreadCount > 99 ? '99+' : unreadCount).show();
+            } else {
+                chatBadge.hide();
+            }
+            
+            // Update floating chat badge - FORCE SHOW FOR TESTING
+            const floatingBadge = $('#floating-chat-badge');
+            console.log('🎯 Floating badge element:', floatingBadge.length > 0 ? 'FOUND' : 'NOT FOUND');
+            
+            if (floatingBadge.length) {
+                if (unreadCount > 0) {
+                    const displayText = unreadCount > 99 ? '99+' : unreadCount;
+                    floatingBadge.text(displayText);
+                    floatingBadge.css({
+                        'display': 'flex',
+                        'visibility': 'visible',
+                        'opacity': '1'
+                    });
+                    console.log('✅ Floating badge SHOWN with count:', displayText);
+                } else {
+                    floatingBadge.hide();
+                    console.log('❌ Floating badge hidden (no unread)');
+                }
+            } else {
+                console.error('❌ Floating chat badge element #floating-chat-badge NOT FOUND in DOM!');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ Error loading unread count:', error);
+        }
+    });
+}
+
+
+
+// Chat Widget Functions
+function toggleChatWidget() {
+    const widget = document.getElementById('chatWidget');
+    const button = document.querySelector('.floating-chat-btn');
+    
+    if (widget.style.display === 'none' || widget.style.display === '') {
+        widget.style.display = 'flex';
+        button.style.transform = 'scale(0.9)';
+        loadChatConversations();
+        
+        // Add entrance animation
+        widget.style.animation = 'slideUp 0.3s ease-out';
+    } else {
+        widget.style.animation = 'slideDown 0.3s ease-out';
+        setTimeout(() => {
+            widget.style.display = 'none';
+        }, 250);
+        button.style.transform = 'scale(1)';
+    }
+}
+
+// Add slide down animation
+const slideDownStyle = document.createElement('style');
+slideDownStyle.textContent = `
+    @keyframes slideDown {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+    }
+`;
+document.head.appendChild(slideDownStyle);
+
+function loadChatConversations() {
+    $.ajax({
+        url: '/chat/api/conversations',
+        method: 'GET',
+        success: function(response) {
+            const conversations = response.conversations || [];
+            const listContainer = $('#chatConversationList');
+            
+            if (conversations.length === 0) {
+                listContainer.html(`
+                    <div class="chat-empty-state">
+                        <i class="fas fa-comments"></i>
+                        <p>No conversations yet</p>
+                        <small>Start chatting with sellers!</small>
+                    </div>
+                `);
+                $('#chat-count-widget').text('0');
+                return;
+            }
+            
+            let html = '';
+            let unreadCount = 0;
+            
+            conversations.forEach(conv => {
+                const isUnread = conv.unread_count > 0;
+                if (isUnread) unreadCount += conv.unread_count;
+                
+                const initials = conv.other_user_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                const timeAgo = formatTimeAgo(conv.last_message_time);
+                
+                // Escape quotes in names
+                const escapedName = conv.other_user_name.replace(/'/g, "\\'");
+                const escapedInitials = initials.replace(/'/g, "\\'");
+                const profileImage = conv.other_user_profile_image || '';
+                const escapedImage = profileImage.replace(/'/g, "\\'");
+                
+                // Create avatar HTML with online status
+                let avatarHtml = '';
+                if (profileImage) {
+                    avatarHtml = `
+                        <div style="position: relative;">
+                            <img src="${profileImage}" class="chat-avatar-img" alt="${conv.other_user_name}">
+                            <div class="chat-online-status"></div>
+                        </div>
+                    `;
+                } else {
+                    avatarHtml = `
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${initials}</div>
+                            <div class="chat-online-status"></div>
+                        </div>
+                    `;
+                }
+                
+                // Role icon with better styling
+                let roleIcon = '';
+                if (conv.other_user_role === 'seller') {
+                    roleIcon = '<i class="fas fa-store" title="Seller" style="font-size: 0.75rem; color: #2ecc71; margin-left: 4px;"></i>';
+                } else if (conv.other_user_role === 'rider') {
+                    roleIcon = '<i class="fas fa-motorcycle" title="Rider" style="font-size: 0.75rem; color: #f39c12; margin-left: 4px;"></i>';
+                }
+                
+                // Truncate long messages
+                let preview = conv.last_message || 'No messages yet';
+                if (preview.length > 40) {
+                    preview = preview.substring(0, 40) + '...';
+                }
+                
+                html += `
+                    <div class="chat-conversation-item ${isUnread ? 'unread' : ''}" onclick="openConversation(${conv.conversation_id}, '${escapedName}', '${escapedInitials}', '${escapedImage}', '${conv.other_user_role}')">
+                        ${avatarHtml}
+                        <div class="chat-info">
+                            <div class="chat-name">
+                                <span>${conv.other_user_name}${roleIcon}</span>
+                                <span class="chat-time">${timeAgo}</span>
+                            </div>
+                            <div class="chat-preview">${preview}</div>
+                        </div>
+                        ${isUnread ? `<span class="chat-unread-badge">${conv.unread_count > 99 ? '99+' : conv.unread_count}</span>` : ''}
+                    </div>
+                `;
+            });
+            
+            listContainer.html(html);
+            $('#chat-count-widget').text(conversations.length);
+            
+            // Add smooth fade-in animation to items
+            $('.chat-conversation-item').each(function(index) {
+                $(this).css({
+                    'animation': `fadeIn 0.3s ease ${index * 0.05}s both`
+                });
+            });
+        },
+        error: function() {
+            $('#chatConversationList').html(`
+                <div class="chat-empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load conversations</p>
+                    <small>Please try again later</small>
+                </div>
+            `);
+        }
+    });
+}
+
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd';
+    return date.toLocaleDateString();
+}
+
+// Declare global variables for chat widget
+var currentConversationId = null;
+var messageRefreshInterval = null;
+
+// Initialize chat widget jQuery functions when jQuery is ready
+(function() {
+    function initChatWidgetHandlers() {
+        if (typeof $ === 'undefined') {
+            setTimeout(initChatWidgetHandlers, 100);
+            return;
+        }
+        
+        // Search conversations
+        $(document).on('input', '#chatSearchInput', function() {
+            const searchTerm = $(this).val().toLowerCase();
+            $('.chat-conversation-item').each(function() {
+                const name = $(this).find('.chat-name span:first').text().toLowerCase();
+                $(this).toggle(name.includes(searchTerm));
+            });
+        });
+        
+        // Send message on Enter key
+        $(document).on('keypress', '#chatMessageInput', function(e) {
+            if (e.which === 13) {
+                sendWidgetMessage();
+            }
+        });
+        
+        // Load notifications when dropdown is opened
+        $(document).on('show.bs.dropdown', '#notificationDropdown', function() {
+            console.log('Notification dropdown opened');
+            const listContainer = $('#notification-list');
+            
+            // Show loading only if empty
+            if (listContainer.children().length === 0) {
+                listContainer.html('<div class="text-center py-3"><small class="text-muted">Loading...</small></div>');
+            }
+            
+            if (typeof loadNotificationDropdown === 'function') {
+                loadNotificationDropdown();
+            } else {
+                console.error('loadNotificationDropdown function not found');
+            }
+        });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChatWidgetHandlers);
+    } else {
+        initChatWidgetHandlers();
+    }
+})();
+
+// Open conversation in widget
+function openConversation(conversationId, userName, initials, profileImage, userRole) {
+    console.log('Opening conversation:', conversationId, userName, initials, profileImage, userRole);
+    
+    try {
+        currentConversationId = conversationId;
+        
+        // Role icon
+        let roleIcon = '';
+        if (userRole === 'seller') {
+            roleIcon = '<i class="fas fa-store text-success ms-1" title="Seller" style="font-size: 0.85rem;"></i>';
+        } else if (userRole === 'rider') {
+            roleIcon = '<i class="fas fa-motorcycle text-warning ms-1" title="Rider" style="font-size: 0.85rem;"></i>';
+        }
+        
+        // Update header
+        const userNameEl = document.getElementById('chatUserName');
+        const userAvatarEl = document.getElementById('chatUserAvatar');
+        
+        if (userNameEl) userNameEl.innerHTML = userName + roleIcon;
+        if (userAvatarEl) {
+            if (profileImage) {
+                userAvatarEl.innerHTML = `<img src="${profileImage}" alt="${userName}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                userAvatarEl.textContent = initials;
+            }
+        }
+        
+        // Switch views
+        const listView = document.getElementById('chatListView');
+        const messagesView = document.getElementById('chatMessagesView');
+        
+        if (listView) listView.style.display = 'none';
+        if (messagesView) messagesView.style.display = 'flex';
+        
+        // Load messages
+        loadConversationMessages(conversationId);
+        
+        // Start auto-refresh
+        if (messageRefreshInterval) clearInterval(messageRefreshInterval);
+        messageRefreshInterval = setInterval(() => loadConversationMessages(conversationId), 3000);
+    } catch (error) {
+        console.error('Error opening conversation:', error);
+        alert('Error opening conversation: ' + error.message);
+    }
+}
+
+function backToConversationList() {
+    const listView = document.getElementById('chatListView');
+    const messagesView = document.getElementById('chatMessagesView');
+    
+    if (messagesView) messagesView.style.display = 'none';
+    if (listView) listView.style.display = 'flex';
+    
+    currentConversationId = null;
+    
+    // Stop auto-refresh
+    if (messageRefreshInterval) {
+        clearInterval(messageRefreshInterval);
+        messageRefreshInterval = null;
+    }
+    
+    // Reload conversation list
+    loadChatConversations();
+}
+
+function loadConversationMessages(conversationId) {
+    $.ajax({
+        url: `/chat/api/messages/${conversationId}`,
+        method: 'GET',
+        success: function(response) {
+            const messages = response.messages || [];
+            const container = $('#chatMessagesContainer');
+            
+            if (messages.length === 0) {
+                container.html('<div class="text-center text-muted py-4">No messages yet. Start the conversation!</div>');
+                return;
+            }
+            
+            let html = '';
+            messages.forEach(msg => {
+                const isSent = msg.is_sent_by_me;
+                const time = formatTimeAgo(msg.created_at);
+                
+                html += `
+                    <div class="chat-message ${isSent ? 'sent' : 'received'}">
+                        <div class="chat-message-bubble">
+                            <div>${msg.content}</div>
+                            <div class="chat-message-time">${time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.html(html);
+            container.scrollTop(container[0].scrollHeight);
+        }
+    });
+}
+
+function sendWidgetMessage() {
+    const input = $('#chatMessageInput');
+    const message = input.val().trim();
+    
+    if (!message || !currentConversationId) return;
+    
+    $.ajax({
+        url: '/chat/api/send',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            conversation_id: currentConversationId,
+            content: message
+        }),
+        success: function(response) {
+            if (response.success) {
+                input.val('');
+                loadConversationMessages(currentConversationId);
+            }
+        }
+    });
+}
+
+// Send message on Enter key
+$(document).on('keypress', '#chatMessageInput', function(e) {
+    if (e.which === 13) {
+        sendWidgetMessage();
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Initializing...');
+    
+    // Initialize auto-hide header
+    initAutoHideHeader();
+    
+    // Check if jQuery is loaded
+    if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+        console.log('jQuery is loaded');
+        
+        {% if current_user %}
+        console.log('User is logged in, loading counts...');
+        if (typeof loadNotificationCount === 'function') {
+            loadNotificationCount();
+            loadCartCount();
+            loadUnreadMessageCount();
+            
+            // Refresh every 30 seconds
+            setInterval(function() {
+                loadNotificationCount();
+                loadCartCount();
+                loadUnreadMessageCount();
+            }, 30000);
+        } else {
+            console.error('✗ loadNotificationCount function not found!');
+        }
+        {% else %}
+        console.log('User is guest, hiding badges');
+
+        // Guest mode - hide badges
+        $('#notification-count').hide();
+        $('#cart-count').hide();
+        $('#floating-chat-badge').hide();
+        {% endif %}
+    } else {
+        console.warn('jQuery is not loaded yet');
+    }
+});
+
+// Auto-hide header function - Using inline styles for guaranteed effect
+function initAutoHideHeader() {
+    let lastScrollTop = 0;
+    let scrollThreshold = 50; // Start hiding after scrolling 50px
+    const navbar = document.querySelector('.navbar.fixed-top');
+    let ticking = false;
+    let isHidden = false;
+    
+    if (!navbar) {
+        console.error('❌ Navbar not found for auto-hide!');
+        return;
+    }
+    
+    console.log('✓ Auto-hide header initialized successfully');
+    console.log('Navbar element:', navbar);
+    
+    // Set initial styles
+    navbar.style.transition = 'transform 0.3s ease-in-out';
+    navbar.style.transform = 'translateY(0)';
+    
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            window.requestAnimationFrame(function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Only apply hide/show after scrolling past threshold
+                if (scrollTop < scrollThreshold) {
+                    // At top of page - always show
+                    if (isHidden) {
+                        console.log('→ Showing header (at top)');
+                        navbar.style.transform = 'translateY(0)';
+                        isHidden = false;
+                    }
+                } else {
+                    // Scrolling down - hide header
+                    if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+                        if (!isHidden) {
+                            console.log('↓ Hiding header (scrolling down) - scroll:', scrollTop);
+                            navbar.style.transform = 'translateY(-100%)';
+                            isHidden = true;
+                        }
+                    } 
+                    // Scrolling up - show header
+                    else if (scrollTop < lastScrollTop) {
+                        if (isHidden) {
+                            console.log('↑ Showing header (scrolling up) - scroll:', scrollTop);
+                            navbar.style.transform = 'translateY(0)';
+                            isHidden = false;
+                        }
+                    }
+                }
+                
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+                ticking = false;
+            });
+            
+            ticking = true;
+        }
+    }, { passive: true });
+    
+    console.log('✓ Scroll event listener attached successfully');
+}
+
+// Guest Mode: Intercept buying actions and prompt login
+{% if not current_user %}
+function requireLogin(actionName) {
+    // Redirect directly to login page
+    window.location.href = '{{ url_for("login") }}';
+}
+
+// Intercept all cart and buy actions
+$(document).on('click', '[id*="add-to-cart"], [id*="buy-now"], [id*="wishlist"], .add-to-cart-btn, .buy-now-btn, .wishlist-btn, [href*="checkout"]', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    requireLogin('purchase');
+    return false;
+});
+
+// Allow cart page navigation but show message
+$(document).on('click', '[href*="cart"]', function(e) {
+    const href = $(this).attr('href');
+    if (href === '{{ url_for("buyer_cart") }}') {
+        // Allow navigation to cart page
+        return true;
+    }
+});
+
+// Intercept cart API calls
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    const url = args[0];
+    if (typeof url === 'string' && (url.includes('/api/cart') || url.includes('/api/add_to_cart') || url.includes('/api/wishlist'))) {
+        requireLogin('purchase');
+        return Promise.reject('Login required');
+    }
+    return originalFetch.apply(this, args);
+};
+
+// Intercept AJAX calls
+$(document).ajaxSend(function(event, jqxhr, settings) {
+    if (settings.url && (settings.url.includes('/api/cart') || settings.url.includes('/api/add_to_cart') || settings.url.includes('/api/wishlist'))) {
+        jqxhr.abort();
+        requireLogin('purchase');
+    }
+});
+
+// Show guest mode indicator
+$(document).ready(function() {
+    // Add a subtle guest mode indicator to the navbar
+    const guestIndicator = $('<span class="badge bg-info ms-2" style="font-size: 0.7rem;">Guest Mode</span>');
+    $('.navbar-brand').append(guestIndicator);
+});
+{% endif %}
+
+// Auto-hide header on scroll down, show on scroll up
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing header scroll animation...');
+    
+    let lastScrollTop = 0;
+    let scrollThreshold = 50; // Start hiding after scrolling 50px
+    const navbar = document.querySelector('.navbar.fixed-top');
+    
+    if (!navbar) {
+        console.error('Navbar not found!');
+        return;
+    }
+    
+    console.log('Navbar found:', navbar);
+    
+    let ticking = false;
+    
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            window.requestAnimationFrame(function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                console.log('Scroll position:', scrollTop, 'Last:', lastScrollTop);
+                
+                // Only apply hide/show after scrolling past threshold
+                if (scrollTop < scrollThreshold) {
+                    // At top of page - always show
+                    navbar.classList.remove('header-hidden');
+                    navbar.classList.add('header-visible');
+                    console.log('At top - showing header');
+                } else {
+                    // Scrolling down - hide header
+                    if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+                        navbar.classList.add('header-hidden');
+                        navbar.classList.remove('header-visible');
+                        console.log('Scrolling down - hiding header');
+                    } 
+                    // Scrolling up - show header
+                    else if (scrollTop < lastScrollTop) {
+                        navbar.classList.remove('header-hidden');
+                        navbar.classList.add('header-visible');
+                        console.log('Scrolling up - showing header');
+                    }
+                }
+                
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+                ticking = false;
+            });
+            
+            ticking = true;
+        }
+    }, { passive: true });
+    
+    console.log('Header scroll animation initialized!');
+});
+</script>
+
+<!-- Smart Search JavaScript -->
+<script src="{{ url_for('static', filename='js/smart-search.js') }}"></script>
+
+<!-- Enhanced Floating Chat Widget Styles -->
+<style>
+/* Floating Chat Button - Unified Design */
+.floating-chat-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: white;
+    border: none;
+    box-shadow: 0 8px 24px rgba(220, 53, 69, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.floating-chat-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(220, 53, 69, 0.6);
+}
+
+.floating-chat-btn i {
+    color: white;
+    font-size: 1.75rem;
+}
+
+.floating-chat-btn .chat-text {
+    display: none;
+}
+
+/* Chat Notification Badge - Unified Design */
+.chat-notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    animation: pulse-notification 2s infinite;
+    z-index: 10;
+}
+
+@keyframes pulse-notification {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.floating-chat-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border: 3px solid white;
+    padding: 0 6px;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.6);
+    animation: bounce-badge 0.5s ease, pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.6);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.8);
+    }
+}
+
+/* Chat Widget Container */
+.chat-widget {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 380px;
+    max-height: 600px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+/* Chat Widget Header */
+.chat-widget-header {
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 16px 16px 0 0;
+}
+
+.chat-widget-header .fw-bold {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-widget-header .badge {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.btn-close-chat {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-close-chat:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.btn-back-chat {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+}
+
+.btn-back-chat:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Chat Widget Body */
+.chat-widget-body {
+    flex: 1;
+    overflow-y: auto;
+    background: #f8f9fa;
+}
+
+/* Chat Search */
+.chat-search {
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.chat-search input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 24px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.chat-search input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+/* Chat List */
+.chat-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Chat Conversation Item */
+.chat-conversation-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.chat-conversation-item:hover {
+    background: #f8f9fa;
+}
+
+.chat-conversation-item.unread {
+    background: #fff5f5;
+}
+
+.chat-conversation-item.unread:hover {
+    background: #ffe9e9;
+}
+
+/* Chat Avatar */
+.chat-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.chat-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    flex-shrink: 0;
+    border: 2px solid #e9ecef;
+}
+
+.chat-avatar-small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+/* Chat Info */
+.chat-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.chat-name span:first-child {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2c3e50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-time {
+    font-size: 11px;
+    color: #95a5a6;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.chat-preview {
+    font-size: 13px;
+    color: #7f8c8d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-conversation-item.unread .chat-preview {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Chat Unread Badge */
+.chat-unread-badge {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #FF6B6B;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Chat Messages Container */
+.chat-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #f8f9fa;
+    max-height: 400px;
+}
+
+/* Chat Message */
+.chat-message {
+    display: flex;
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease;
+}
+
+.chat-message.sent {
+    justify-content: flex-end;
+}
+
+.chat-message-bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.chat-message.received .chat-message-bubble {
+    background: white;
+    color: #2c3e50;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.chat-message.sent .chat-message-bubble {
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-message-time {
+    font-size: 10px;
+    margin-top: 4px;
+    opacity: 0.7;
+}
+
+/* Chat Input Container */
+.chat-input-container {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+    gap: 8px;
+}
+
+.chat-input-container input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 24px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.chat-input-container input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+.chat-input-container .btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-input-container .btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+/* Chat Widget Footer */
+.chat-widget-footer {
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.chat-widget-footer .btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+/* Chat Empty State */
+.chat-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #95a5a6;
+}
+
+.chat-empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.chat-empty-state p {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.chat-empty-state small {
+    font-size: 13px;
+}
+
+/* Animations */
+@keyframes pulse-float {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(255, 107, 107, 0.6);
+    }
+}
+
+@keyframes bounce-badge {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Scrollbar Styling */
+.chat-list::-webkit-scrollbar,
+.chat-messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages-container::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.chat-list::-webkit-scrollbar-thumb:hover,
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .floating-chat-btn {
+        width: 56px;
+        height: 56px;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .floating-chat-btn i {
+        font-size: 24px;
+    }
+    
+    .chat-widget {
+        width: calc(100vw - 40px);
+        max-width: 380px;
+        bottom: 90px;
+        right: 20px;
+        max-height: 500px;
+    }
+}
+
+/* Online Status Indicator */
+.chat-online-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: #2ecc71;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+/* Typing Indicator */
+.chat-typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: white;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    max-width: 70px;
+}
+
+.chat-typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #95a5a6;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: typing 1.4s infinite;
+}
+
+.chat-typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.chat-typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+</style>
+
+<!-- Enhanced Notification System -->
+<script src="{{ url_for('static', filename='js/notification-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notification-triggers.js') }}"></script>
+
+<script>
+// Trigger notifications for common actions
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for cart updates
+    window.addEventListener('cartUpdated', function(e) {
+        NotificationSystem.notify('Cart Updated', e.detail.message || 'Item added to cart', 'success');
+    });
+    
+    // Listen for profile updates
+    window.addEventListener('profileUpdated', function() {
+        NotificationSystem.notify('Profile Updated', 'Your profile has been updated successfully', 'success');
+    });
+});
+</script>
+
+<script>
+// Global: Prevent ALL image modals/lightboxes - force direct navigation to product pages
+$(document).ready(function() {
+    // Prevent Bootstrap modal from showing on any image click
+    $('body').on('show.bs.modal', function(e) {
+        // Check if modal is triggered by an image
+        if ($(e.relatedTarget).is('img') || $(e.relatedTarget).closest('.product-image').length) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Override any click handlers on product images
+    $(document).on('click', '.product-image, .product-image img, .product-image a', function(e) {
+        const link = $(this).closest('a[href*="product"]');
+        if (link.length && link.attr('href')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            window.location.href = link.attr('href');
+            return false;
+        }
+    });
+});
+</script>
+
+{% block extra_scripts %}{% endblock %}
+{% endblock %}

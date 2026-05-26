@@ -1,0 +1,404 @@
+{% extends "buyer/base.html" %}
+
+{% block title %}{{ seller.business_name or seller.full_name }} - Seller Shop{% endblock %}
+
+{% block buyer_content %}
+<div class="container py-4">
+    <!-- Seller Header -->
+    <div class="seller-header card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center">
+                        {% if seller.profile_image %}
+                            <img src="{{ seller.profile_image }}" alt="{{ seller.business_name or seller.full_name }}" class="rounded-circle me-4" width="80" height="80">
+                        {% else %}
+                            <div class="seller-avatar-large rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-4" style="width: 80px; height: 80px; font-size: 32px;">
+                                {{ seller.first_name[0] }}{{ seller.last_name[0] }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h2 class="mb-1">{{ seller.business_name or seller.full_name }}</h2>
+                            <p class="text-muted mb-2">@{{ seller.username }}</p>
+                            <div class="seller-stats">
+                                <span class="me-3">
+                                    <i class="fas fa-box me-1"></i>{{ total_products }} Products
+                                </span>
+                                <span class="me-3">
+                                    <i class="fas fa-users me-1"></i>{{ follower_count }} Followers
+                                </span>
+                                <span class="me-3">
+                                    <i class="fas fa-star text-warning me-1"></i>{{ "%.1f"|format(avg_rating) }} ({{ total_reviews }} reviews)
+                                </span>
+                                <span class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>Joined {{ seller.created_at.strftime('%B %Y') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if session.get('user_id') %}
+                        <div class="d-flex justify-content-end gap-2 align-items-center">
+                            <button class="btn btn-primary" id="follow-btn" data-seller-id="{{ seller.id }}">
+                                {% if is_following %}
+                                    <i class="fas fa-user-check me-1"></i>Following
+                                {% else %}
+                                    <i class="fas fa-user-plus me-1"></i>Follow
+                                {% endif %}
+                            </button>
+                            <button class="btn btn-outline-dark" onclick="openSellerChat({{ seller.id }}, '{{ seller.business_name or seller.full_name }}', '{{ seller.first_name[0] }}{{ seller.last_name[0] }}', '{{ seller.profile_image or '' }}')">
+                                <i class="fas fa-comment-dots me-1"></i>Message
+                            </button>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <small class="text-muted" id="follower-count">{{ follower_count }} followers</small>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login to Follow
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <!-- Search -->
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" placeholder="Search products..." value="{{ current_search }}">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Category Filter -->
+                        <div class="col-md-4">
+                            <select name="category" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if current_category == category.id|string %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Sort -->
+                        <div class="col-md-4">
+                            <select name="sort" class="form-select" onchange="this.form.submit()">
+                                <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                                <option value="price_low" {% if current_sort == 'price_low' %}selected{% endif %}>Price (Low to High)</option>
+                                <option value="price_high" {% if current_sort == 'price_high' %}selected{% endif %}>Price (High to Low)</option>
+                                <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    {% if products.items %}
+        <div class="row">
+            {% for product in products.items %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100 product-card">
+                        <a href="{{ url_for('product_detail', product_id=product.id) }}" class="product-card-link"></a>
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                                <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title text-dark">{{ product.name }}</h6>
+                            <p class="card-text text-muted small">{{ product.brand or 'No Brand' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">₱{{ "%.2f"|format(product.price) }}</span>
+                                <div class="rating-small">
+                                    {% for i in range(1, 6) %}
+                                        {% if i <= product.average_rating %}
+                                            <i class="fas fa-star text-warning small"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-muted small"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if product.stock_quantity > 0 %}
+                                <span class="badge bg-success mt-2">In Stock</span>
+                            {% else %}
+                                <span class="badge bg-danger mt-2">Out of Stock</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if products.pages > 1 %}
+            <nav aria-label="Product pagination">
+                <ul class="pagination justify-content-center pagination-minimal">
+                    {% if products.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('seller_shop', seller_id=seller.id, username=seller.username, page=products.prev_num, search=current_search, sort=current_sort, category=current_category) }}">&lt;</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&lt;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item">
+                        <span class="page-link page-number">{{ products.page }}</span>
+                    </li>
+                    
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('seller_shop', seller_id=seller.id, username=seller.username, page=products.next_num, search=current_search, sort=current_sort, category=current_category) }}">&gt;</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&gt;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4>No Products Found</h4>
+            <p class="text-muted">This seller hasn't listed any products yet{% if current_search %} matching "{{ current_search }}"{% endif %}.</p>
+            {% if current_search or current_category %}
+                <a href="{{ url_for('seller_shop', seller_id=seller.id, username=seller.username) }}" class="btn btn-primary">
+                    <i class="fas fa-redo me-2"></i>Clear Filters
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.seller-header {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.seller-stats {
+    font-size: 0.9rem;
+}
+
+.seller-stats span {
+    display: inline-block;
+}
+
+.product-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e5e5e5;
+    position: relative;
+}
+
+/* Overlay link that covers entire card */
+.product-card-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    text-decoration: none;
+}
+
+/* Hover effect on card when link is hovered */
+.product-card-link:hover ~ .card-img-top,
+.product-card-link:hover ~ .card-body,
+.product-card:has(.product-card-link:hover) {
+    cursor: pointer;
+}
+
+.product-card:has(.product-card-link:hover) {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.btn-primary {
+    background: #000;
+    border: 1px solid #000;
+    color: white;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    border-radius: 4px;
+}
+
+.btn-primary:hover {
+    background: #333;
+    border-color: #333;
+    color: white;
+}
+
+.btn-outline-dark {
+    background: white;
+    border: 1px solid #ddd;
+    color: #333;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    border-radius: 4px;
+}
+
+.btn-outline-dark:hover {
+    background: #f8f9fa;
+    border-color: #000;
+    color: #000;
+}
+
+.card {
+    border-radius: 0;
+    border: 1px solid #e5e5e5;
+}
+
+/* Minimalist Pagination Styles */
+.pagination-minimal .page-link {
+    border: none;
+    background: transparent;
+    color: #333;
+    font-size: 2rem;
+    padding: 1rem 2rem;
+    margin: 0 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    min-width: 80px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-minimal .page-link:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.pagination-minimal .page-item.disabled .page-link {
+    color: #ccc;
+    background: transparent;
+}
+
+.pagination-minimal .page-number {
+    color: #333;
+    font-weight: 600;
+    background: transparent !important;
+    cursor: default;
+}
+
+@media (max-width: 768px) {
+    .seller-header .row {
+        text-align: center;
+    }
+    
+    .seller-header .col-md-4 {
+        margin-top: 20px;
+    }
+    
+    .seller-stats span {
+        display: block;
+        margin-bottom: 5px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+$(document).ready(function() {
+    // Follow/Unfollow functionality
+    $('#follow-btn').click(function() {
+        const sellerId = $(this).data('seller-id');
+        const btn = $(this);
+        
+        $.ajax({
+            url: `/api/follow_seller/${sellerId}`,
+            method: 'POST',
+            success: function(response) {
+                if (response.success) {
+                    if (response.action === 'followed') {
+                        btn.html('<i class="fas fa-user-check me-1"></i>Following');
+                        btn.removeClass('btn-primary').addClass('btn-success');
+                    } else {
+                        btn.html('<i class="fas fa-user-plus me-1"></i>Follow');
+                        btn.removeClass('btn-success').addClass('btn-primary');
+                    }
+                    
+                    // Update follower count
+                    $('#follower-count').text(response.follower_count + ' followers');
+                    
+                    // Show toast notification
+                    if (typeof showAlert === 'function') {
+                        showAlert(response.message, 'success');
+                    }
+                }
+            },
+            error: function() {
+                if (typeof showAlert === 'function') {
+                    showAlert('An error occurred. Please try again.', 'error');
+                }
+            }
+        });
+    });
+});
+
+// Function to open chat with seller using floating chat widget
+function openSellerChat(sellerId, sellerName, initials, profileImage) {
+    // First, open the chat widget if it's not already open
+    const widget = document.getElementById('chatWidget');
+    if (!widget || widget.style.display === 'none' || widget.style.display === '') {
+        toggleChatWidget();
+    }
+    
+    // Wait a bit for the widget to open, then load or create conversation
+    setTimeout(() => {
+        $.ajax({
+            url: `/chat/api/get-or-create/${sellerId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.conversation_id) {
+                    // Open the conversation in the widget
+                    openConversation(response.conversation_id, sellerName, initials, profileImage, 'seller');
+                } else {
+                    // If conversation doesn't exist, create it by opening with seller ID
+                    // The openConversation function will handle creating it
+                    openConversation(sellerId, sellerName, initials, profileImage, 'seller');
+                }
+            },
+            error: function() {
+                // Fallback: try to open with seller ID
+                openConversation(sellerId, sellerName, initials, profileImage, 'seller');
+            }
+        });
+    }, 300);
+}
+</script>
+{% endblock %}

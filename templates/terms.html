@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h1 class="text-center mb-4">Terms and Conditions</h1>
+            <p class="text-muted text-center mb-5">Last updated: {{ current_date }}</p>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h3>1. Acceptance of Terms</h3>
+                    <p>By accessing and using Gym Store platform, you accept and agree to be bound by the terms and provision of this agreement.</p>
+                    
+                    <h3>2. User Registration and Approval</h3>
+                    <ul>
+                        <li><strong>Buyers:</strong> Must register with valid personal information and ID upload for admin approval.</li>
+                        <li><strong>Sellers:</strong> Must provide store name, business permit, and DTI certification for approval.</li>
+                        <li><strong>Riders:</strong> Must register and await admin approval before accessing delivery features.</li>
+                        <li>All registrations are subject to admin approval. Approval/rejection notifications will be sent via email/phone.</li>
+                    </ul>
+                    
+                    <h3>3. Order Process and Payment</h3>
+                    <ul>
+                        <li>Adding items to cart does not reduce seller inventory.</li>
+                        <li>Inventory is reduced only when an order is successfully placed.</li>
+                        <li>Order statuses: Pending → Preparing → For Pickup → Picked Up → On the Way → Delivered → Completed</li>
+                        <li>Buyers must click "Confirm Received" for sellers to receive payment.</li>
+                        <li>If buyers don't confirm receipt within 7-10 days, the system will auto-confirm the order.</li>
+                    </ul>
+                    
+                    <h3>4. Commission and Fees</h3>
+                    <ul>
+                        <li>Platform charges a commission percentage on each completed transaction.</li>
+                        <li>Commission is collected when orders are confirmed by buyers or auto-confirmed by the system.</li>
+                        <li>Current commission rate: {{ commission_rate }}%</li>
+                        <li>Commission rates may be adjusted with prior notice.</li>
+                    </ul>
+                    
+                    <h3>5. Delivery and Fulfillment</h3>
+                    <ul>
+                        <li>Sellers are responsible for updating order status to "Preparing" upon receiving orders.</li>
+                        <li>Riders will be notified when parcels are ready for pickup.</li>
+                        <li>Delivery options include direct delivery and same-day delivery.</li>
+                        <li>Riders work on a commission-based system.</li>
+                    </ul>
+                    
+                    <h3>6. Returns and Refunds</h3>
+                    <ul>
+                        <li>Return and refund processes are optional and handled case-by-case.</li>
+                        <li>Buyers may request refunds for delivered orders with valid reasons.</li>
+                        <li>Refund requests are subject to seller and admin review.</li>
+                        <li>Admin oversees all refund/return cases for dispute resolution.</li>
+                    </ul>
+                    
+                    <h3>7. User Conduct and Violations</h3>
+                    <ul>
+                        <li>Users must conduct business in good faith and provide accurate information.</li>
+                        <li>Platform tracks user offenses with levels of violation.</li>
+                        <li>Repeated violations may result in account suspension or termination.</li>
+                        <li>Admin handles complaints via chat support system.</li>
+                    </ul>
+                    
+                    <h3>8. Address and Location</h3>
+                    <ul>
+                        <li>Address structure follows: Region → Province → Municipality → Barangay</li>
+                        <li>Platform integrates with address APIs for accurate location selection.</li>
+                        <li>Users must provide accurate delivery addresses.</li>
+                    </ul>
+                    
+                    <h3>9. Platform Administration</h3>
+                    <ul>
+                        <li>Admin approves/disapproves all user registrations.</li>
+                        <li>Admin manages platform commission percentage.</li>
+                        <li>Admin has access to sales, commissions, statistics, and monthly reports.</li>
+                        <li>Admin provides customer support and handles disputes.</li>
+                    </ul>
+                    
+                    <h3>10. Privacy and Data Protection</h3>
+                    <ul>
+                        <li>User information is collected and stored securely.</li>
+                        <li>Personal data is used only for platform operations and communications.</li>
+                        <li>Business documents uploaded by sellers are kept confidential.</li>
+                        <li>Platform may send notifications via email/phone for important updates.</li>
+                    </ul>
+                    
+                    <h3>11. Limitation of Liability</h3>
+                    <p>Gym Store platform acts as an intermediary between buyers, sellers, and riders. We are not responsible for the quality of products, delivery delays, or disputes between parties, though we provide support for resolution.</p>
+                    
+                    <h3>12. Modifications to Terms</h3>
+                    <p>These terms may be updated from time to time. Users will be notified of significant changes via email or platform notifications.</p>
+                    
+                    <h3>13. Contact Information</h3>
+                    <p>For questions about these Terms and Conditions, please contact us at:</p>
+                    <ul>
+                        <li>Email: {{ support_email }}</li>
+                        <li>Platform: Chat support system</li>
+                    </ul>
+                    
+                    <div class="text-center mt-5">
+                        <p class="text-muted">By using Gym Store, you acknowledge that you have read, understood, and agree to these Terms and Conditions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

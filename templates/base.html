@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Daily Fitness{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Minimalist Alert Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/minimalist-alerts.css') }}?v=2.0">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Messages (Hidden - Will be shown via SweetAlert2) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages" style="display: none;">
+                {% for category, message in messages %}
+                    <div data-category="{{ category }}" data-message="{{ message }}"></div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    {% block content %}{% endblock %}
+
+    <!-- Floating Chat Button - Handled by role-specific base templates (buyer/base.html, seller/base.html, etc.) -->
+
+    <!-- Chat Widget Modal - Handled by role-specific base templates -->
+    {% if false %}
+    <div id="chat-widget" class="chat-widget" style="display: none;">
+        <!-- Conversations List View -->
+        <div id="conversations-view">
+            <div class="chat-widget-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>Messages
+                </h5>
+                <button class="btn-close-chat" onclick="toggleChatWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-widget-body" id="chat-conversations-list">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation Messages View -->
+        <div id="conversation-view" style="display: none;">
+            <div class="chat-widget-header">
+                <button class="btn-back-chat" onclick="backToConversations()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="flex-grow-1">
+                    <h6 class="mb-0" id="conversation-user-name">User Name</h6>
+                    <small id="conversation-user-status">Online</small>
+                </div>
+                <button class="btn-close-chat" onclick="toggleChatWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-widget-body" id="chat-messages-container" style="padding: 15px;">
+                <!-- Messages will be loaded here -->
+            </div>
+            <div class="chat-widget-footer">
+                <form id="chat-message-form" class="d-flex gap-2">
+                    <input type="text" id="chat-message-input" class="form-control form-control-sm" 
+                           placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- jQuery (required by custom scripts using $) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase Web SDK -->
+    <script>
+      window.FIREBASE_CONFIG = {{ FIREBASE_CONFIG | tojson | safe }};
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/firebase/config.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/firebase/init.js') }}"></script>
+    <script type="module">
+      import * as firebaseAuth from "{{ url_for('static', filename='js/firebase/auth.js') }}";
+      import * as firebaseFirestore from "{{ url_for('static', filename='js/firebase/firestore.js') }}";
+      import * as firebaseStorage from "{{ url_for('static', filename='js/firebase/storage.js') }}";
+      window.firebaseAuth = firebaseAuth;
+      window.firebaseFirestore = firebaseFirestore;
+      window.firebaseStorage = firebaseStorage;
+    </script>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Flash Messages Handler (SweetAlert2) -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Process Flask flash messages and show them as SweetAlert2
+        const flashContainer = document.getElementById('flash-messages');
+        if (flashContainer) {
+            const messages = flashContainer.querySelectorAll('[data-category]');
+            messages.forEach((msgEl, index) => {
+                const category = msgEl.getAttribute('data-category');
+                const message = msgEl.getAttribute('data-message');
+                
+                // Map Flask categories to SweetAlert2 icons
+                let icon = 'info';
+                let title = 'Notification';
+                
+                if (category === 'success') {
+                    icon = 'success';
+                    title = 'Success!';
+                } else if (category === 'error' || category === 'danger') {
+                    icon = 'error';
+                    title = 'Error';
+                } else if (category === 'warning') {
+                    icon = 'warning';
+                    title = 'Warning';
+                } else if (category === 'info') {
+                    icon = 'info';
+                    title = 'Information';
+                }
+                
+                // Show SweetAlert with better styling
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        text: message,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#0d6efd',
+                        timer: category === 'success' ? 3000 : null,
+                        timerProgressBar: category === 'success',
+                        showClass: {
+                            popup: 'animate__animated animate__fadeInDown'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__fadeOutUp'
+                        }
+                    });
+                }, index * 100);
+            });
+        }
+    });
+    </script>
+    
+    <!-- Toast Notification System -->
+    <style>
+    .toast-notification {
+        min-width: 300px;
+        max-width: 400px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .toast-notification::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+    }
+    
+    .toast-notification.success::before {
+        background: #10b981;
+    }
+    
+    .toast-notification.error::before,
+    .toast-notification.danger::before {
+        background: #ef4444;
+    }
+    
+    .toast-notification.warning::before {
+        background: #f59e0b;
+    }
+    
+    .toast-notification.info::before {
+        background: #3b82f6;
+    }
+    
+    .toast-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .toast-notification.success .toast-icon {
+        color: #10b981;
+    }
+    
+    .toast-notification.error .toast-icon,
+    .toast-notification.danger .toast-icon {
+        color: #ef4444;
+    }
+    
+    .toast-notification.warning .toast-icon {
+        color: #f59e0b;
+    }
+    
+    .toast-notification.info .toast-icon {
+        color: #3b82f6;
+    }
+    
+    .toast-content {
+        flex: 1;
+        color: #1f2937;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .toast-close {
+        background: transparent;
+        border: none;
+        color: #9ca3af;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .toast-close:hover {
+        background: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translateX(400px);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .toast-notification {
+            min-width: calc(100vw - 40px);
+            max-width: calc(100vw - 40px);
+        }
+    }
+    </style>
+    
+    <script>
+    // Global Toast Notification System
+    window.showToast = function(message, type = 'info', duration = 5000) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        
+        // Icon mapping
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            danger: 'fa-times-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        
+        const icon = icons[type] || icons.info;
+        
+        toast.innerHTML = `
+            <i class="fas ${icon} toast-icon"></i>
+            <div class="toast-content">${message}</div>
+            <button class="toast-close" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Auto remove after duration
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, duration);
+    };
+    
+    // Convenience functions
+    window.showSuccessToast = (message) => showToast(message, 'success');
+    window.showErrorToast = (message) => showToast(message, 'error');
+    window.showWarningToast = (message) => showToast(message, 'warning');
+    window.showInfoToast = (message) => showToast(message, 'info');
+    </script>
+    
+    <!-- Floating Chat Widget Styles - Disabled (handled by role-specific templates) -->
+    {% if false %}
+    <style>
+    .floating-chat-button {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+        z-index: 1000;
+        transition: all 0.3s ease;
+        animation: pulse 2s infinite;
+    }
+
+    .floating-chat-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 32px rgba(255, 107, 107, 0.5);
+    }
+
+    .floating-chat-button i {
+        color: white;
+        font-size: 32px;
+    }
+
+    .chat-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #FF3B3B;
+        color: white;
+        border-radius: 50%;
+        min-width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        border: 3px solid white;
+        padding: 0 6px;
+        box-shadow: 0 2px 8px rgba(255, 59, 59, 0.5);
+        animation: bounce 0.5s ease, pulse-badge 2s infinite;
+    }
+    
+    @keyframes pulse-badge {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 2px 8px rgba(255, 59, 59, 0.5);
+        }
+        50% {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(255, 59, 59, 0.7);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+        }
+        50% {
+            box-shadow: 0 8px 32px rgba(255, 107, 107, 0.6);
+        }
+    }
+
+    @keyframes bounce {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+    }
+
+    .chat-widget {
+        position: fixed;
+        bottom: 120px;
+        right: 30px;
+        width: 380px;
+        height: 500px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .chat-widget-header {
+        background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-close-chat {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 5px;
+        transition: transform 0.2s;
+    }
+
+    .btn-close-chat:hover {
+        transform: rotate(90deg);
+    }
+
+    .chat-widget-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f8f9fa;
+    }
+
+    .conversation-item {
+        background: white;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .conversation-item:hover {
+        background: #f8f9fa;
+        transform: translateX(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .conversation-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .conversation-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .conversation-name {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-last-message {
+        font-size: 13px;
+        color: #718096;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-unread {
+        background: #FF6B6B;
+        color: white;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .btn-back-chat {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 5px 10px;
+        margin-right: 10px;
+        transition: transform 0.2s;
+    }
+
+    .btn-back-chat:hover {
+        transform: translateX(-3px);
+    }
+
+    .chat-widget-footer {
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .chat-message-bubble {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 16px;
+        margin-bottom: 10px;
+        word-wrap: break-word;
+    }
+
+    .chat-message-sent {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+
+    .chat-message-received {
+        background: white;
+        color: #2d3748;
+        border: 1px solid #e9ecef;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-message-time {
+        font-size: 10px;
+        opacity: 0.7;
+        margin-top: 4px;
+    }
+
+    #conversations-view, #conversation-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .floating-chat-button {
+            width: 60px;
+            height: 60px;
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .floating-chat-button i {
+            font-size: 28px;
+        }
+
+        .chat-widget {
+            width: calc(100vw - 40px);
+            height: calc(100vh - 140px);
+            right: 20px;
+            bottom: 100px;
+        }
+    }
+    </style>
+    {% endif %}
+
+    <!-- Floating Chat Widget Script - Disabled (handled by role-specific templates) -->
+    {% if false %}
+    <script>
+    let chatWidgetOpen = false;
+
+    function toggleChatWidget() {
+        const widget = document.getElementById('chat-widget');
+        chatWidgetOpen = !chatWidgetOpen;
+        
+        if (chatWidgetOpen) {
+            widget.style.display = 'flex';
+            loadConversations();
+        } else {
+            widget.style.display = 'none';
+        }
+    }
+
+    function loadConversations() {
+        const container = document.getElementById('chat-conversations-list');
+        
+        fetch('/chat/api/conversations')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.conversations.length > 0) {
+                    let html = '';
+                    data.conversations.forEach(conv => {
+                        const initials = conv.other_user_name.split(' ').map(n => n[0]).join('').toUpperCase();
+                        const unreadBadge = conv.unread_count > 0 ? 
+                            `<span class="conversation-unread">${conv.unread_count}</span>` : '';
+                        
+                        html += `
+                            <div class="conversation-item" onclick="openConversation(${conv.other_user_id})">
+                                <div class="conversation-avatar">${initials}</div>
+                                <div class="conversation-info">
+                                    <div class="conversation-name">${conv.other_user_name}</div>
+                                    <div class="conversation-last-message">${conv.last_message || 'No messages yet'}</div>
+                                </div>
+                                ${unreadBadge}
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    
+                    // Update badge
+                    updateChatBadge(data.total_unread);
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No conversations yet</p>
+                            <small class="text-muted">Start chatting with sellers, buyers, or riders!</small>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading conversations:', error);
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+                        <p class="text-danger">Failed to load conversations</p>
+                    </div>
+                `;
+            });
+    }
+
+    let currentConversationId = null;
+    let currentOtherUserId = null;
+
+    function openConversation(userId) {
+        currentOtherUserId = userId;
+        
+        // Hide conversations list, show conversation view
+        document.getElementById('conversations-view').style.display = 'none';
+        document.getElementById('conversation-view').style.display = 'flex';
+        
+        // Load conversation messages
+        loadConversationMessages(userId);
+    }
+
+    function backToConversations() {
+        document.getElementById('conversation-view').style.display = 'none';
+        document.getElementById('conversations-view').style.display = 'flex';
+        currentConversationId = null;
+        currentOtherUserId = null;
+    }
+
+    function loadConversationMessages(userId) {
+        const container = document.getElementById('chat-messages-container');
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        // Fetch or create conversation
+        fetch(`/chat/api/get-or-create-conversation/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentConversationId = data.conversation_id;
+                    document.getElementById('conversation-user-name').textContent = data.other_user_name;
+                    document.getElementById('conversation-user-status').textContent = data.is_online ? 'Online' : 'Offline';
+                    
+                    // Load messages
+                    displayMessages(data.messages);
+                } else {
+                    container.innerHTML = '<div class="text-center py-4 text-danger">Failed to load conversation</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading conversation:', error);
+                container.innerHTML = '<div class="text-center py-4 text-danger">Error loading conversation</div>';
+            });
+    }
+
+    function displayMessages(messages) {
+        const container = document.getElementById('chat-messages-container');
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-comments fa-2x mb-2"></i><p>No messages yet</p></div>';
+            return;
+        }
+        
+        let html = '';
+        messages.forEach(msg => {
+            const isSent = msg.sender_id == {{ session.get('user_id') or 0 }};
+            const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            
+            html += `
+                <div class="d-flex ${isSent ? 'justify-content-end' : 'justify-content-start'} mb-2">
+                    <div class="chat-message-bubble ${isSent ? 'chat-message-sent' : 'chat-message-received'}">
+                        <div>${msg.message_content}</div>
+                        <div class="chat-message-time">${time}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Handle message form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('chat-message-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const input = document.getElementById('chat-message-input');
+                const message = input.value.trim();
+                
+                if (!message || !currentConversationId) return;
+                
+                // Send message
+                fetch('/chat/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conversation_id: currentConversationId,
+                        content: message
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Add message to UI
+                        const container = document.getElementById('chat-messages-container');
+                        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                        
+                        const messageHtml = `
+                            <div class="d-flex justify-content-end mb-2">
+                                <div class="chat-message-bubble chat-message-sent">
+                                    <div>${message}</div>
+                                    <div class="chat-message-time">${time}</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.insertAdjacentHTML('beforeend', messageHtml);
+                        container.scrollTop = container.scrollHeight;
+                        
+                        input.value = '';
+                    }
+                })
+                .catch(error => console.error('Error sending message:', error));
+            });
+        }
+    });
+
+    function updateChatBadge(count) {
+        const badge = document.getElementById('chat-badge');
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Load unread count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if session.get('user_id') %}
+        fetch('/chat/api/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateChatBadge(data.unread_count);
+                }
+            })
+            .catch(error => console.error('Error loading unread count:', error));
+        
+        // Refresh unread count every 30 seconds
+        setInterval(() => {
+            fetch('/chat/api/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateChatBadge(data.unread_count);
+                    }
+                })
+                .catch(error => console.error('Error loading unread count:', error));
+        }, 30000);
+        {% endif %}
+    });
+    </script>
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

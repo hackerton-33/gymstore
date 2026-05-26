@@ -1,0 +1,1079 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Daily Fitness{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Modern Register Modal Design */
+    .register-container {
+        padding: 2rem 0;
+    }
+    
+    .register-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        background: #ffffff;
+    }
+    
+    .register-header {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        border: none;
+    }
+    
+    .register-header h3 {
+        color: white;
+        font-weight: 600;
+        font-size: 1.5rem;
+        margin: 0;
+        letter-spacing: 0.5px;
+    }
+    
+    .register-header i {
+        font-size: 1.2rem;
+    }
+    
+    .register-body {
+        padding: 2rem 2.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #2d3748;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    
+    /* Input Group Fix for Password Fields - Complete Rewrite */
+    .input-group {
+        position: relative;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        width: 100%;
+    }
+    
+    .input-group > .form-control {
+        position: relative;
+        flex: 1 1 auto;
+        width: 1%;
+        min-width: 0;
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        padding: 0.65rem 1rem;
+        padding-right: 3rem;
+    }
+    
+    .input-group > .input-group-text {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        padding: 0.65rem 1rem;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 4;
+    }
+    
+    .input-group > .form-control:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        z-index: 3;
+    }
+    
+    .input-group > .input-group-text:hover {
+        color: #ef4444;
+    }
+    
+    /* Remove Bootstrap validation icons and keep layout intact */
+    .input-group > .form-control.is-valid,
+    .input-group > .form-control.is-invalid {
+        background-image: none !important;
+        padding-right: 3rem !important;
+        border-radius: 10px !important;
+    }
+    
+    .input-group > .form-control.is-valid {
+        border-color: #198754 !important;
+    }
+    
+    .input-group > .form-control.is-invalid {
+        border-color: #dc3545 !important;
+    }
+    
+    .input-group > .form-control.is-valid:focus {
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1) !important;
+    }
+    
+    .input-group > .form-control.is-invalid:focus {
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+    
+    /* Position validation feedback below the entire input group */
+    .input-group ~ .valid-feedback,
+    .input-group ~ .invalid-feedback {
+        display: block !important;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+    }
+    
+    /* Hide any validation feedback that might appear inside the input */
+    .input-group .valid-feedback,
+    .input-group .invalid-feedback {
+        display: none !important;
+    }
+    
+    /* Ensure validation messages appear after the input group */
+    .mb-3 {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mb-3 .input-group {
+        order: 1;
+    }
+    
+    .mb-3 .valid-feedback,
+    .mb-3 .invalid-feedback {
+        order: 2;
+        position: static !important;
+    }
+    
+    .mb-3 small.text-muted {
+        order: 3;
+    }
+    
+    .address-section {
+        background: linear-gradient(135deg, #f6f8fb 0%, #f1f4f9 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .address-section h5 {
+        color: #ef4444;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .business-info {
+        display: none;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #fecaca;
+        animation: slideDown 0.3s ease;
+    }
+    
+    .business-info.show {
+        display: block;
+    }
+    
+    .business-info h5 {
+        color: #dc2626;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .document-upload {
+        border: 2px dashed #cbd5e0;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        background: #f7fafc;
+    }
+    
+    .document-upload:hover {
+        border-color: #ef4444;
+        background: #fef2f2;
+        transform: translateY(-2px);
+    }
+    
+    .document-upload i {
+        color: #ef4444;
+    }
+    
+    .role-icon {
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+    }
+    
+    #role {
+        padding-left: 2.8rem !important;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+    
+    .btn-outline-secondary {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        color: #4a5568;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: #f7fafc;
+        border-color: #cbd5e0;
+        color: #2d3748;
+    }
+    
+    .input-group-text {
+        border: 2px solid #e2e8f0;
+        border-left: none;
+        background: white;
+        border-radius: 0 10px 10px 0;
+    }
+    
+    .input-group .form-control {
+        border-right: none;
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .input-group .form-control:focus + .input-group-text {
+        border-color: #ef4444;
+    }
+    
+    .register-footer {
+        background: #f7fafc;
+        padding: 1.5rem;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .register-footer a {
+        color: #ef4444;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .register-footer a:hover {
+        color: #dc2626;
+        text-decoration: underline;
+    }
+    
+    .social-register-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: 2px solid;
+        font-size: 1.2rem;
+    }
+    
+    .social-register-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .form-check-input:checked {
+        background-color: #ef4444;
+        border-color: #ef4444;
+    }
+    
+    .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+    
+    h5 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .text-muted {
+        color: #718096 !important;
+    }
+    
+    /* Document Section Styling */
+    #documentSection {
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #fecaca;
+    }
+    
+    #documentSection h5 {
+        color: #dc2626;
+    }
+    
+    .form-text {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+    
+    /* Smooth transitions */
+    * {
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    /* Fade in animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .register-card {
+        animation: fadeInUp 0.6s ease;
+    }
+    
+    /* Enhanced form focus effects */
+    .form-control:focus, .form-select:focus {
+        transform: translateY(-1px);
+    }
+    
+    /* Terms checkbox styling */
+    .form-check-input {
+        width: 1.2rem;
+        height: 1.2rem;
+        border-radius: 5px;
+        border: 2px solid #cbd5e0;
+        cursor: pointer;
+    }
+    
+    .form-check-label {
+        cursor: pointer;
+        color: #4a5568;
+        font-size: 0.9rem;
+    }
+    
+    /* Badge styling for info */
+    .badge {
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="video-bg-wrapper">
+    <video class="video-bg" autoplay muted loop playsinline>
+        <source src="https://media.istockphoto.com/id/915283878/video/modern-gym-interior.mp4?s=mp4-640x640-is&k=20&c=ni6j1_f65s2jkxoYIf1_9ctrbPQEuyoTg4lbtQ2pvS0=" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="video-overlay"></div>
+
+    <div class="content-on-video">
+<div class="container register-container">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card register-card">
+                <div class="card-header register-header">
+                    <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create Your Account</h3>
+                </div>
+                <div class="card-body register-body">
+                    <form method="POST" enctype="multipart/form-data" id="registrationForm">
+                        <!-- Role Selection -->
+                        <div class="mb-3">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag me-2"></i>Choose Your Role *
+                            </label>
+                            <div class="position-relative">
+                                <i class="fas fa-shopping-cart position-absolute role-icon" id="roleIcon" style="left: 12px; top: 50%; transform: translateY(-50%); color: #0d6efd; z-index: 10;"></i>
+                                <select class="form-select ps-5" id="role" name="role" required style="padding-left: 2.5rem;">
+                                    <option value="buyer" selected>Buyer - Shop for gym equipment and supplements</option>
+                                    <option value="seller">Seller - Sell your products on our platform</option>
+                                    <option value="rider">Rider - Deliver orders to customers</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="first_name" class="form-label">First Name *</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="last_name" class="form-label">Last Name *</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                                        <span class="input-group-text" id="togglePassword">
+                                            <i class="far fa-eye"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">Minimum 8 characters</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                        <span class="input-group-text" id="toggleConfirmPassword">
+                                            <i class="far fa-eye"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Information (for Sellers) -->
+                        <div class="business-info" id="businessInfo">
+                            <h5 class="mb-3">Business Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="store_name" class="form-label">Store Name *</label>
+                                        <input type="text" class="form-control" id="store_name" name="store_name">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="business_type" class="form-label">Business Type *</label>
+                                        <select class="form-select" id="business_type" name="business_type">
+                                            <option value="individual">Individual</option>
+                                            <option value="corporation">Corporation</option>
+                                            <option value="partnership">Partnership</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address Information -->
+                        <div class="address-section">
+                            <h5 class="mb-3">Address Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="region" class="form-label">Region *</label>
+                                        <select class="form-select" id="region" name="region" required>
+                                            <option value="">Select Region</option>
+                                            <option value="NCR">National Capital Region</option>
+                                            <option value="CAR">Cordillera Administrative Region</option>
+                                            <option value="I">Ilocos Region</option>
+                                            <option value="II">Cagayan Valley</option>
+                                            <option value="III">Central Luzon</option>
+                                            <option value="IV-A">CALABARZON</option>
+                                            <option value="IV-B">MIMAROPA</option>
+                                            <option value="V">Bicol Region</option>
+                                            <option value="VI">Western Visayas</option>
+                                            <option value="VII">Central Visayas</option>
+                                            <option value="VIII">Eastern Visayas</option>
+                                            <option value="IX">Zamboanga Peninsula</option>
+                                            <option value="X">Northern Mindanao</option>
+                                            <option value="XI">Davao Region</option>
+                                            <option value="XII">SOCCSKSARGEN</option>
+                                            <option value="XIII">Caraga</option>
+                                            <option value="BARMM">Bangsamoro Autonomous Region in Muslim Mindanao</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="province" class="form-label">Province/City *</label>
+                                        <select class="form-select" id="province" name="province" required>
+                                            <option value="">Select Province/City</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="municipality" class="form-label">Municipality *</label>
+                                        <select class="form-select" id="municipality" name="municipality" required>
+                                            <option value="">Select Municipality/City</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="barangay" class="form-label">Barangay *</label>
+                                        <select class="form-select" id="barangay" name="barangay" required>
+                                            <option value="">Select Barangay</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="street_address" class="form-label">Street Address *</label>
+                                        <input type="text" class="form-control" id="street_address" name="street_address" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="zip_code" class="form-label">ZIP Code</label>
+                                        <input type="text" class="form-control" id="zip_code" name="zip_code">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Document Verification (Dynamic based on role) -->
+                        <div class="row mb-4" id="documentSection" style="display: none;">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-file-alt me-2"></i><span id="documentTitle">Required Documents</span>
+                                </h5>
+                                <p class="text-muted mb-3" id="documentDescription"></p>
+                            </div>
+                            
+                            <!-- Seller Documents (3 documents) -->
+                            <div id="sellerDocuments" style="display: none;">
+                                <div class="col-md-4 mb-3">
+                                    <label for="valid_id_seller" class="form-label">Valid ID <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="valid_id_seller" name="valid_id" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="form-text">Government-issued ID (Driver's License, Passport, etc.)</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="business_permit" class="form-label">Business Permit <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="business_permit" name="business_permit" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="form-text">Mayor's Permit or Business Permit</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="dti_certification" class="form-label">Tax Registration/DTI <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="dti_certification" name="dti_certification" accept=".pdf,.jpg,.jpeg,.png">
+                                    <div class="form-text">DTI Certificate or BIR Registration</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Rider Documents (1 document) -->
+                            <div id="riderDocuments" style="display: none;">
+                                <div class="col-12">
+                                    <div class="document-upload">
+                                        <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
+                                        <h6>Valid ID or Driver's License <span class="text-danger">*</span></h6>
+                                        <p class="text-muted">Upload a clear photo of your valid government-issued ID or Driver's License</p>
+                                        <input type="file" class="form-control" id="valid_id_rider" name="valid_id" accept="image/*,.pdf">
+                                        <div class="form-text">Accepted formats: JPG, PNG, PDF (Max 10MB)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a> *
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" style="padding: 0.85rem 2rem; font-size: 1.05rem;">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+
+                        <!-- OAuth Registration Options -->
+                        <div class="text-center mt-4 pt-3" style="border-top: 1px solid #e2e8f0;">
+                            <div class="text-center mb-3" style="font-size: 0.9rem; color: #718096; font-weight: 500;">
+                                <span style="background: white; padding: 0 15px; position: relative; top: -25px;">or register with</span>
+                            </div>
+                            <div class="d-flex justify-content-center" style="margin-top: -15px; padding: 0 20px;">
+                                <a href="{{ url_for('register_google') }}" 
+                                   class="btn btn-outline-danger w-100" 
+                                   style="padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease; font-weight: 500;"
+                                   aria-label="Register with Google">
+                                    <i class="fab fa-google" style="font-size: 1.2rem;"></i>
+                                    <span>Register with Google</span>
+                                </a>
+                            </div>
+                            <div class="alert alert-info mt-3 mb-0" style="background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 10px; padding: 0.75rem; font-size: 0.85rem;">
+                                <i class="fas fa-info-circle me-1"></i>Buyer accounts are activated immediately. Seller and rider accounts require admin approval.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer register-footer">
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('index') }}">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Account Registration</h6>
+                <p>By creating an account, you agree to provide accurate and complete information. You are responsible for maintaining the security of your account.</p>
+                
+                <h6>2. User Responsibilities</h6>
+                <p>Users must comply with all applicable laws and regulations. Sellers are responsible for the quality and legality of their products.</p>
+                
+                <h6>3. Payment and Transactions</h6>
+                <p>All transactions are processed securely. Refunds are subject to our refund policy and dispute resolution process.</p>
+                
+                <h6>4. Prohibited Activities</h6>
+                <p>Users may not engage in fraudulent activities, sell prohibited items, or violate any platform policies.</p>
+                
+                <h6>5. Platform Liability</h6>
+                <p>Daily Fitness acts as a marketplace platform and is not responsible for the quality of products sold by third-party sellers.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Information Collection</h6>
+                <p>We collect personal information you provide during registration, including name, contact details, and address information.</p>
+                
+                <h6>2. Document Verification</h6>
+                <p>For sellers and riders, uploaded documents are used solely for identity verification and are stored securely. Buyers do not need to upload documents. We do not share this information with third parties.</p>
+                
+                <h6>3. Data Usage</h6>
+                <p>Your information is used to provide our services, process transactions, and communicate with you about your account.</p>
+                
+                <h6>4. Data Security</h6>
+                <p>We implement appropriate security measures to protect your personal information from unauthorized access or disclosure.</p>
+                
+                <h6>5. Your Rights</h6>
+                <p>You have the right to access, update, or delete your personal information. Contact us for assistance with data-related requests.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Validation System -->
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize validation utilities
+    const { showSuccess, showError, showWarning, showToast, showLoading, closeAlert,
+            isValidEmail, validatePassword, passwordsMatch, isValidPhone, checkRequiredFields,
+            addPasswordMatchIndicator, addPasswordStrengthIndicator } = window.ValidationUtils;
+
+    // Add password strength indicator
+    addPasswordStrengthIndicator('password');
+    
+    // Add password match indicator
+    addPasswordMatchIndicator('password', 'confirm_password');
+
+    // Role selection handling
+    const roleSelect = document.getElementById('role');
+    const roleIcon = document.getElementById('roleIcon');
+    const businessInfo = document.getElementById('businessInfo');
+    const storeNameInput = document.getElementById('store_name');
+    const businessTypeSelect = document.getElementById('business_type');
+
+    // Document section elements
+    const documentSection = document.getElementById('documentSection');
+    const documentTitle = document.getElementById('documentTitle');
+    const documentDescription = document.getElementById('documentDescription');
+    const sellerDocuments = document.getElementById('sellerDocuments');
+    const riderDocuments = document.getElementById('riderDocuments');
+    
+    // Document input fields
+    const validIdSeller = document.getElementById('valid_id_seller');
+    const businessPermit = document.getElementById('business_permit');
+    const dtiCertification = document.getElementById('dti_certification');
+    const validIdRider = document.getElementById('valid_id_rider');
+
+    function updateRoleRequirements() {
+        const role = roleSelect.value;
+        
+        // Update icon based on role
+        if (role === 'buyer') {
+            roleIcon.className = 'fas fa-shopping-cart position-absolute role-icon';
+            roleIcon.style.color = '#0d6efd';
+        } else if (role === 'seller') {
+            roleIcon.className = 'fas fa-store position-absolute role-icon';
+            roleIcon.style.color = '#198754';
+        } else if (role === 'rider') {
+            roleIcon.className = 'fas fa-motorcycle position-absolute role-icon';
+            roleIcon.style.color = '#ffc107';
+        }
+        
+        // Handle business info visibility
+        if (role === 'seller') {
+            businessInfo.classList.add('show');
+            storeNameInput.required = true;
+            businessTypeSelect.required = true;
+        } else {
+            businessInfo.classList.remove('show');
+            storeNameInput.required = false;
+            businessTypeSelect.required = false;
+        }
+        
+        // Handle document requirements based on role
+        if (role === 'buyer') {
+            // Buyer: No documents required
+            documentSection.style.display = 'none';
+            validIdSeller.required = false;
+            businessPermit.required = false;
+            dtiCertification.required = false;
+            validIdRider.required = false;
+        } else if (role === 'seller') {
+            // Seller: 3 documents required
+            documentSection.style.display = 'block';
+            documentTitle.textContent = 'Required Documents (3 Documents Required)';
+            documentDescription.textContent = 'All sellers must provide the following documents for verification:';
+            sellerDocuments.style.display = 'flex';
+            riderDocuments.style.display = 'none';
+            validIdSeller.required = true;
+            businessPermit.required = true;
+            dtiCertification.required = true;
+            validIdRider.required = false;
+        } else if (role === 'rider') {
+            // Rider: 1 document required
+            documentSection.style.display = 'block';
+            documentTitle.textContent = 'Required Document';
+            documentDescription.textContent = 'Riders must provide a valid ID or Driver\'s License for verification:';
+            sellerDocuments.style.display = 'none';
+            riderDocuments.style.display = 'block';
+            validIdSeller.required = false;
+            businessPermit.required = false;
+            dtiCertification.required = false;
+            validIdRider.required = true;
+        }
+    }
+
+    // Listen for role changes
+    roleSelect.addEventListener('change', updateRoleRequirements);
+    
+    // Initialize on page load
+    updateRoleRequirements();
+
+    // Address dropdown handling
+    const regionSelect = document.getElementById('region');
+    const provinceSelect = document.getElementById('province');
+    const municipalitySelect = document.getElementById('municipality');
+    const barangaySelect = document.getElementById('barangay');
+
+    const provinces = {
+        'NCR': [
+            'Manila', 'Quezon City', 'Caloocan', 'Las Piñas', 'Makati', 'Malabon',
+            'Mandaluyong', 'Marikina', 'Muntinlupa', 'Navotas', 'Parañaque',
+            'Pasay', 'Pasig', 'Pateros', 'San Juan', 'Taguig', 'Valenzuela'
+        ],
+        'CAR': [
+            'Baguio City', 'Apayao', 'Abra', 'Benguet', 'Ifugao', 'Kalinga', 'Mountain Province'
+        ],
+        'I': [
+            'Ilocos Norte', 'Ilocos Sur', 'La Union', 'Pangasinan'
+        ],
+        'II': [
+            'Batanes', 'Cagayan', 'Isabela', 'Nueva Vizcaya', 'Quirino'
+        ],
+        'III': [
+            'Aurora', 'Bataan', 'Bulacan', 'Nueva Ecija', 'Pampanga', 'Tarlac', 'Zambales'
+        ],
+        'IV-A': [
+            'Batangas', 'Cavite', 'Laguna', 'Quezon', 'Rizal'
+        ],
+        'IV-B': [
+            'Marinduque', 'Occidental Mindoro', 'Oriental Mindoro', 'Palawan', 'Romblon'
+        ],
+        'V': [
+            'Albay', 'Camarines Norte', 'Camarines Sur', 'Catanduanes', 'Masbate', 'Sorsogon'
+        ],
+        'VI': [
+            'Aklan', 'Antique', 'Capiz', 'Guimaras', 'Iloilo', 'Negros Occidental'
+        ],
+        'VII': [
+            'Bohol', 'Cebu', 'Negros Oriental', 'Siquijor'
+        ],
+        'VIII': [
+            'Biliran', 'Eastern Samar', 'Leyte', 'Northern Samar', 'Samar', 'Southern Leyte'
+        ],
+        'IX': [
+            'Zamboanga del Norte', 'Zamboanga del Sur', 'Zamboanga Sibugay', 'Zamboanga City'
+        ],
+        'X': [
+            'Bukidnon', 'Camiguin', 'Lanao del Norte', 'Misamis Occidental', 'Misamis Oriental'
+        ],
+        'XI': [
+            'Davao del Norte', 'Davao del Sur', 'Davao Occidental', 'Davao Oriental', 'Davao de Oro', 'Davao City'
+        ],
+        'XII': [
+            'Cotabato', 'Sarangani', 'South Cotabato', 'Sultan Kudarat', 'General Santos City'
+        ],
+        'XIII': [
+            'Agusan del Norte', 'Agusan del Sur', 'Dinagat Islands', 'Surigao del Norte', 'Surigao del Sur'
+        ],
+        'BARMM': [
+            'Basilan', 'Lanao del Sur', 'Maguindanao', 'Sulu', 'Tawi-Tawi'
+        ]
+    };
+
+    regionSelect.addEventListener('change', function() {
+        const selectedRegion = this.value;
+        provinceSelect.innerHTML = '<option value="">Select Province/City</option>';
+        municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+        
+        if (provinces[selectedRegion]) {
+            provinces[selectedRegion].forEach(province => {
+                const option = document.createElement('option');
+                option.value = province;
+                option.textContent = province;
+                provinceSelect.appendChild(option);
+            });
+        }
+    });
+
+    provinceSelect.addEventListener('change', function() {
+        const selectedProvince = this.value;
+        municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+
+        if (selectedProvince) {
+            // Fetch municipalities from API
+            fetch(`/api/address/municipalities/${encodeURIComponent(selectedProvince)}`)
+                .then(response => response.json())
+                .then(municipalities => {
+                    municipalities.forEach(municipality => {
+                        const option = document.createElement('option');
+                        option.value = municipality;
+                        option.textContent = municipality;
+                        municipalitySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching municipalities:', error);
+                });
+        }
+    });
+
+    municipalitySelect.addEventListener('change', function() {
+        const selectedMunicipality = this.value;
+        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+
+        if (selectedMunicipality) {
+            // Fetch barangays from API
+            fetch(`/api/address/barangays/${encodeURIComponent(selectedMunicipality)}`)
+                .then(response => response.json())
+                .then(barangays => {
+                    barangays.forEach(barangay => {
+                        const option = document.createElement('option');
+                        option.value = barangay;
+                        option.textContent = barangay;
+                        barangaySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching barangays:', error);
+                });
+        }
+    });
+
+    // No buyer document uploads required
+
+    // Form validation COMPLETELY REMOVED - Server handles everything
+    // No event listener needed
+
+    // Password toggle
+    const togglePwd = document.getElementById('togglePassword');
+    const pwd = document.getElementById('password');
+    if (togglePwd && pwd) {
+        togglePwd.addEventListener('click', function() {
+            const isPwd = pwd.getAttribute('type') === 'password';
+            pwd.setAttribute('type', isPwd ? 'text' : 'password');
+            this.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+            this.setAttribute('aria-label', isPwd ? 'Hide password' : 'Show password');
+        });
+    }
+
+    // Confirm password toggle
+    const toggleConfirm = document.getElementById('toggleConfirmPassword');
+    const cpwd = document.getElementById('confirm_password');
+    if (toggleConfirm && cpwd) {
+        toggleConfirm.addEventListener('click', function() {
+            const isPwd = cpwd.getAttribute('type') === 'password';
+            cpwd.setAttribute('type', isPwd ? 'text' : 'password');
+            this.innerHTML = isPwd ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+            this.setAttribute('aria-label', isPwd ? 'Hide password' : 'Show password');
+        });
+    }
+
+    // Initialize Bootstrap tooltips for OAuth buttons
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add hover effects to social registration buttons
+    const socialRegisterBtns = document.querySelectorAll('.social-register-btn');
+    socialRegisterBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.1)';
+            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+<style>
+.social-register-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.social-register-btn:active {
+    transform: scale(0.95);
+}
+
+/* Register page video background styles */
+.video-bg-wrapper {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.video-bg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    z-index: -2;
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+}
+
+.content-on-video {
+    position: relative;
+    z-index: 1;
+}
+</style>
+{% endblock %}
