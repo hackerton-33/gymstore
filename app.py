@@ -22,6 +22,252 @@ import pytz
 # Load environment variables
 load_dotenv()
 
+# -------------------- Helper Functions for Template Compatibility --------------------
+def normalize_order_for_template(order):
+    """
+    Normalize order data for templates to work with both SQL and Firestore orders.
+    SQL orders have attributes like order.order_number, order.status, etc.
+    Firestore orders are dicts with keys like order['orderNumber'], order['status'], etc.
+    This function converts Firestore orders to have the same attribute interface as SQL orders.
+    """
+    if isinstance(order, dict):
+        # It's a Firestore order (dict), convert to object-like interface
+        class NormalizedOrder:
+            def __init__(self, data):
+                self._data = data
+            
+            @property
+            def id(self):
+                return self._data.get('id')
+            
+            @property
+            def order_number(self):
+                return self._data.get('orderNumber') or 'N/A'
+            
+            @property
+            def status(self):
+                return self._data.get('status') or 'pending'
+            
+            @property
+            def payment_status(self):
+                return self._data.get('paymentStatus') or 'pending'
+            
+            @property
+            def total_amount(self):
+                total = self._data.get('totalAmount') or self._data.get('total')
+                if total is None:
+                    # Calculate from items if not present
+                    items = self._data.get('items', [])
+                    total = sum(item.get('totalPrice', 0) or 0 for item in items)
+                return total or 0.0
+            
+            @property
+            def payment_method(self):
+                return self._data.get('paymentMethod', 'unknown')
+                
+            @property
+            def shipping_address(self):
+                return self._data.get('shippingAddress', 'N/A')
+            
+            @property
+            def created_at(self):
+                # Firestore stores as timestamp, convert to datetime
+                timestamp = self._data.get('createdAt')
+                if timestamp:
+                    if hasattr(timestamp, 'to_datetime'):
+                        return timestamp.to_datetime()
+                    elif isinstance(timestamp, datetime):
+                        return timestamp
+                return datetime.utcnow()
+            
+            @property
+            def cancellation_reason(self):
+                return self._data.get('cancellationReason')
+            
+            @property
+            def notes(self):
+                return self._data.get('notes')
+            
+            @property
+            def buyer(self):
+                """Return buyer information as an object"""
+                class BuyerInfo:
+                    def __init__(self, data):
+                        self._buyer_data = data.get('buyerInfo', {})
+                        self._buyer_id = data.get('buyerId')
+                        
+                        # Fallback to SQL user if buyerInfo is empty
+                        if not self._buyer_data and self._buyer_id:
+                            try:
+                                sql_id = int(self._buyer_id)
+                                user = User.query.get(sql_id)
+                            except ValueError:
+                                user = User.query.filter_by(firebase_uid=str(self._buyer_id)).first()
+                                
+                            if user:
+                                self._buyer_data = {
+                                    'name': user.full_name,
+                                    'username': user.username,
+                                    'email': user.email,
+                                    'phone': user.phone_number,
+                                    'firstName': user.first_name,
+                                    'lastName': user.last_name,
+                                    'profileImage': getattr(user, 'profile_image_url', None)
+                                }
+                    
+                    @property
+                    def id(self):
+                        return self._buyer_id
+                    
+                    @property
+                    def first_name(self):
+                        return self._buyer_data.get('firstName') or self._buyer_data.get('name', '').split()[0] if self._buyer_data.get('name') else 'Unknown'
+                    
+                    @property
+                    def last_name(self):
+                        last_name = self._buyer_data.get('lastName')
+                        if last_name:
+                            return last_name
+                        name_parts = self._buyer_data.get('name', '').split()
+                        return ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+                    
+                    @property
+                    def full_name(self):
+                        """Return full name for template compatibility"""
+                        first = self.first_name
+                        last = self.last_name
+                        if first == 'Unknown' and not last:
+                            return 'Unknown'
+                        return f"{first} {last}".strip()
+                    
+                    @property
+                    def email(self):
+                        return self._buyer_data.get('email') or 'N/A'
+                    
+                    @property
+                    def username(self):
+                        return self._buyer_data.get('username') or self._buyer_data.get('name') or 'Unknown'
+                        
+                    @property
+                    def phone_number(self):
+                        return self._buyer_data.get('phone') or 'N/A'
+                    
+                    @property
+                    def profile_image(self):
+                        """Return profile image if available"""
+                        return self._buyer_data.get('profileImage') or None
+                
+                return BuyerInfo(self._data)
+            
+            @property
+            def order_items(self):
+                # Convert Firestore items to object-like interface
+                items = self._data.get('items', [])
+                normalized_items = []
+                for item in items:
+                    class NormalizedItem:
+                        def __init__(self, item_data):
+                            self._data = item_data
+                        
+                        @property
+                        def product_id(self):
+                            return self._data.get('productId')
+                        
+                        @property
+                        def quantity(self):
+                            return self._data.get('quantity', 1)
+                        
+                        @property
+                        def unit_price(self):
+                            # Try multiple field names and provide default
+                            return self._data.get('unitPrice') or self._data.get('price') or 0.0
+                        
+                        @property
+                        def total_price(self):
+                            # Calculate if not present
+                            total = self._data.get('totalPrice')
+                            if total is None:
+                                total = self.quantity * self.unit_price
+                            return total
+                        
+                        @property
+                        def seller_id(self):
+                            return self._data.get('sellerId')
+                        
+                        @property
+                        def product(self):
+                            # Create a minimal product object
+                            class MinimalProduct:
+                                def __init__(self, item_data):
+                                    self._data = item_data
+                                
+                                @property
+                                def name(self):
+                                    return self._data.get('productName') or 'Unknown Product'
+                                
+                                @property
+                                def image_url(self):
+                                    return self._data.get('productImage') or self._data.get('imageUrl')
+                                
+                                @property
+                                def is_web_product(self):
+                                    """Check if this is a web product (integer ID) vs mobile product (Firestore doc ID string)"""
+                                    product_id = self._data.get('productId')
+                                    if product_id is None:
+                                        return False
+                                    # Try to convert to int - if it works, it's a web product
+                                    try:
+                                        int(product_id)
+                                        return True
+                                    except (ValueError, TypeError):
+                                        return False
+                                
+                                @property
+                                def category(self):
+                                    class MinimalCategory:
+                                        @property
+                                        def name(self):
+                                            return "Category"
+                                    return MinimalCategory()
+                                
+                                @property
+                                def web_id(self):
+                                    """Return the integer product ID for web products, None for mobile products"""
+                                    if self.is_web_product:
+                                        return int(self._data.get('productId'))
+                                    return None
+                                
+                                @property
+                                def seller(self):
+                                    class MinimalSeller:
+                                        def __init__(self, item_data):
+                                            self._data = item_data
+                                        
+                                        @property
+                                        def business_name(self):
+                                            return "Seller"
+                                            
+                                        @property
+                                        def full_name(self):
+                                            return "Seller"
+                                    return MinimalSeller(self._data)
+                            
+                            return MinimalProduct(self._data)
+                    
+                    normalized_items.append(NormalizedItem(item))
+                
+                # Return a list-like object that works with Jinja
+                class ItemList(list):
+                    def first(self):
+                        return self[0] if self else None
+                
+                return ItemList(normalized_items)
+        
+        return NormalizedOrder(order)
+    else:
+        # It's already a SQL order object, return as-is
+        return order
+
 # -------------------- Firebase Admin SDK --------------------
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth_admin, firestore as firebase_firestore
@@ -358,6 +604,9 @@ class User(db.Model):
     auth_type = db.Column(db.Enum('manual', 'google', 'facebook'), default='manual', nullable=False, index=True)
     oauth_provider_id = db.Column(db.String(255), unique=True, nullable=True, index=True)  # OAuth provider's user ID
     
+    # Firebase cross-platform field
+    firebase_uid = db.Column(db.String(255), unique=True, nullable=True, index=True)  # Firebase UID for cross-platform auth
+    
     # Relationships
     products = db.relationship('Product', backref='seller', lazy='dynamic', foreign_keys='Product.seller_id')
     orders = db.relationship('Order', backref='buyer', lazy='dynamic', foreign_keys='Order.buyer_id')
@@ -365,6 +614,31 @@ class User(db.Model):
     cart_items = db.relationship('Cart', backref='user', lazy='dynamic')
     reviews = db.relationship('Review', backref='user', lazy='dynamic')
     wishlist_items = db.relationship('Wishlist', backref='user', lazy='dynamic')
+    
+    @property
+    def phone_number(self):
+        """Alias for phone to match Firestore field name"""
+        return self.phone
+    
+    @phone_number.setter
+    def phone_number(self, value):
+        """Setter for phone_number alias"""
+        self.phone = value
+    
+    @property
+    def full_name(self):
+        """Get user's full name"""
+        if not self.first_name and not self.last_name:
+            return self.username
+        return f"{self.first_name} {self.last_name}".strip()
+    
+    @full_name.setter
+    def full_name(self, value):
+        """Set full name by splitting into first and last"""
+        if value:
+            parts = value.strip().split(' ', 1)
+            self.first_name = parts[0]
+            self.last_name = parts[1] if len(parts) > 1 else ''
     
     def set_password(self, password):
         """Hash and set password"""
@@ -376,11 +650,6 @@ class User(db.Model):
         if self.password_hash is None:
             return False
         return check_password_hash(self.password_hash, password)
-    
-    @property
-    def full_name(self):
-        """Get user's full name"""
-        return f"{self.first_name} {self.last_name}"
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -699,6 +968,7 @@ class Order(db.Model):
     delivered_at = db.Column(db.DateTime)
     auto_confirmed_at = db.Column(db.DateTime)  # Track auto-confirmation
     last_status_update = db.Column(db.DateTime)  # Track when status was last changed
+    firestore_order_id = db.Column(db.String(255), unique=True, nullable=True, index=True)  # Link to Firestore
     created_at = db.Column(db.DateTime, default=utc_now, index=True)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
     
@@ -869,7 +1139,8 @@ class Notification(db.Model):
     type = db.Column(db.Enum(
         'system_alert', 'registration', 'order_update', 'transaction', 
         'admin_action', 'dispute', 'financial', 'product_update', 
-        'promotion', 'reminder', 'warning'
+        'promotion', 'reminder', 'warning', 'new_delivery',
+        'new_message', 'order'
     ), nullable=False, index=True)
     category = db.Column(db.Enum(
         'approval', 'order', 'payment', 'delivery', 'complaint', 
@@ -1731,7 +2002,17 @@ def _is_allowed_document(filename: str) -> bool:
     return ext in ALLOWED_DOCUMENT_EXTENSIONS
 
 def _save_uploaded_file(file_storage, dest_folder: str, file_type: str = 'image') -> str:
-    """Save uploaded file and return web-accessible path starting with /static/..."""
+    """
+    Upload file to Cloudinary and return the secure URL
+    
+    Args:
+        file_storage: Flask FileStorage object
+        dest_folder: Folder name in Cloudinary (e.g., 'products', 'profiles')
+        file_type: Type of file ('image' or 'document')
+    
+    Returns:
+        str: Cloudinary secure URL or None if failed
+    """
     if not file_storage or file_storage.filename == '':
         return None
     
@@ -1742,6 +2023,37 @@ def _save_uploaded_file(file_storage, dest_folder: str, file_type: str = 'image'
     elif file_type == 'document':
         if not _is_allowed_document(file_storage.filename):
             raise ValueError('Invalid document format. Allowed: pdf, png, jpg, jpeg')
+    
+    try:
+        # Import Cloudinary upload function
+        from cloudinary_config import upload_image, is_cloudinary_configured
+        
+        # Check if Cloudinary is configured
+        if not is_cloudinary_configured():
+            raise Exception("Cloudinary not configured. Please update credentials in cloudinary_config.py")
+        
+        # Extract folder name from dest_folder path (e.g., 'static/uploads/products' -> 'products')
+        folder_name = dest_folder.split('/')[-1] if '/' in dest_folder else dest_folder
+        
+        # Upload to Cloudinary
+        cloudinary_url = upload_image(file_storage, folder=folder_name)
+        
+        if cloudinary_url:
+            print(f"✅ File uploaded to Cloudinary: {cloudinary_url}")
+            return cloudinary_url
+        else:
+            raise Exception("Cloudinary upload failed")
+            
+    except Exception as e:
+        print(f"❌ Error uploading to Cloudinary: {e}")
+        # Fallback to local storage if Cloudinary fails
+        print("⚠️ Falling back to local storage...")
+        return _save_uploaded_file_local(file_storage, dest_folder, file_type)
+
+def _save_uploaded_file_local(file_storage, dest_folder: str, file_type: str = 'image') -> str:
+    """Fallback: Save uploaded file locally and return web-accessible path"""
+    if not file_storage or file_storage.filename == '':
+        return None
     
     filename = secure_filename(file_storage.filename)
     # Make filename unique
@@ -1767,6 +2079,14 @@ def _compute_weight_multiplier(selected_weight: str) -> float:
     except Exception:
         pass
     return 1.0
+
+def _get_seller_firebase_uid(seller_sql_id: int) -> str:
+    """Get seller's Firebase UID from SQL ID for cross-platform sync"""
+    try:
+        seller = User.query.get(seller_sql_id)
+        return seller.firebase_uid if seller and seller.firebase_uid else str(seller_sql_id)
+    except Exception:
+        return str(seller_sql_id)
 
 def get_platform_setting(key: str, default_value: str = None):
     """Get platform setting value"""
@@ -3265,6 +3585,8 @@ def login():
         ).first()
 
         password_valid = False
+        firebase_auth_used = False
+        
         if user:
             try:
                 password_valid = user.check_password(password)
@@ -3285,6 +3607,44 @@ def login():
                 else:
                     flash('An unexpected error occurred. Please try again.', 'error')
                     print(f"Login ValueError: {e}")
+            
+            # If SQL password check failed and user has firebase_uid, try Firebase authentication
+            if not password_valid and user.firebase_uid and _firebase_initialized:
+                try:
+                    import requests
+                    
+                    # Firebase REST API endpoint for password authentication
+                    firebase_api_key = "AIzaSyBR433ttG5Ly8vY1vJ4og5ujhoBGlcAO74"
+                    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
+                    
+                    payload = {
+                        "email": user.email,
+                        "password": password,
+                        "returnSecureToken": True
+                    }
+                    
+                    response = requests.post(url, json=payload)
+                    
+                    if response.status_code == 200:
+                        # Firebase authentication successful
+                        password_valid = True
+                        firebase_auth_used = True
+                        print(f"✅ Firebase authentication successful for {user.email}")
+                        
+                        # Update SQL password hash so next login is faster
+                        try:
+                            user.set_password(password)
+                            db.session.commit()
+                            print(f"✅ Updated SQL password for {user.email}")
+                        except Exception as update_error:
+                            db.session.rollback()
+                            print(f"⚠️ Could not update SQL password: {update_error}")
+                    else:
+                        print(f"❌ Firebase authentication failed for {user.email}: {response.text}")
+                        
+                except Exception as firebase_error:
+                    print(f"⚠️ Firebase authentication error: {firebase_error}")
+                    # Continue with SQL authentication result
 
         if user and password_valid:
             if user.approval_status != 'approved':
@@ -3337,6 +3697,8 @@ def index():
         ).first()
 
         password_valid = False
+        firebase_auth_used = False
+        
         if user:
             try:
                 password_valid = user.check_password(password)
@@ -3357,6 +3719,44 @@ def index():
                 else:
                     flash('An unexpected error occurred. Please try again.', 'error')
                     print(f"Login ValueError: {e}")
+            
+            # If SQL password check failed and user has firebase_uid, try Firebase authentication
+            if not password_valid and user.firebase_uid and _firebase_initialized:
+                try:
+                    import requests
+                    
+                    # Firebase REST API endpoint for password authentication
+                    firebase_api_key = "AIzaSyBR433ttG5Ly8vY1vJ4og5ujhoBGlcAO74"
+                    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
+                    
+                    payload = {
+                        "email": user.email,
+                        "password": password,
+                        "returnSecureToken": True
+                    }
+                    
+                    response = requests.post(url, json=payload)
+                    
+                    if response.status_code == 200:
+                        # Firebase authentication successful
+                        password_valid = True
+                        firebase_auth_used = True
+                        print(f"✅ Firebase authentication successful for {user.email}")
+                        
+                        # Update SQL password hash so next login is faster
+                        try:
+                            user.set_password(password)
+                            db.session.commit()
+                            print(f"✅ Updated SQL password for {user.email}")
+                        except Exception as update_error:
+                            db.session.rollback()
+                            print(f"⚠️ Could not update SQL password: {update_error}")
+                    else:
+                        print(f"❌ Firebase authentication failed for {user.email}: {response.text}")
+                        
+                except Exception as firebase_error:
+                    print(f"⚠️ Firebase authentication error: {firebase_error}")
+                    # Continue with SQL authentication result
 
         if user and password_valid:
             if user.approval_status != 'approved':
@@ -5100,6 +5500,8 @@ def buyer_shop():
             self.seller_id = fs_product.get('sellerId', '')
             self.total_sold = fs_product.get('totalSold', 0)
             self.rating = fs_product.get('rating', 0)
+            self.average_rating = self.rating
+            self.review_count = fs_product.get('reviewCount', 0)
             self.is_active = fs_product.get('isActive', True)
             
             # Create category object
@@ -5142,14 +5544,17 @@ def buyer_cart():
     if user:
         from firestore_helper import get_cart_items_firestore
         
-        # Get cart items from Firestore
-        firestore_items = get_cart_items_firestore(str(user.id))
+        # Get cart items from Firestore using Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        firestore_items = get_cart_items_firestore(user_id)
         
         # Convert Firestore items to objects with properties for template compatibility
         class CartItemAdapter:
             def __init__(self, fs_item):
                 self.id = fs_item.get('id')
-                self.product_id = int(fs_item.get('productId', 0))
+                # Handle both string (Firestore doc ID from mobile) and int (SQL ID from web)
+                raw_product_id = fs_item.get('productId', 0)
+                self.product_id = raw_product_id  # Keep as-is (string or int)
                 self.quantity = fs_item.get('quantity', 0)
                 self.variant = fs_item.get('variant')
                 self.selected_weight = fs_item.get('selectedWeight')
@@ -5157,14 +5562,40 @@ def buyer_cart():
                 
                 # Create a product-like object
                 class ProductAdapter:
-                    def __init__(self, fs_item):
-                        self.id = int(fs_item.get('productId', 0))
+                    def __init__(self, fs_item, product_id):
+                        # Keep product_id as-is (string or int)
+                        self.id = product_id
                         self.name = fs_item.get('productName', '')
                         self.image_url = fs_item.get('productImage', '')
                         self.price = Decimal(str(fs_item.get('price', 0)))
                         self.stock_quantity = fs_item.get('maxStock', 0)
+                        self.brand = fs_item.get('brand', 'No Brand')
+                        
+                        # Check if this is a web product (has integer SQL ID) or mobile product (Firestore doc ID)
+                        self.is_web_product = isinstance(product_id, int) or (isinstance(product_id, str) and product_id.isdigit())
+                        # For templates: only web products have detail pages
+                        self.web_id = int(product_id) if self.is_web_product else None
+                        
+                        # Try to get full product data from Firestore for category info
+                        try:
+                            from firestore_helper import get_product_firestore
+                            full_product = get_product_firestore(str(product_id))
+                            if full_product:
+                                self.brand = full_product.get('brand', 'No Brand')
+                                category_name = full_product.get('category', 'Uncategorized')
+                            else:
+                                category_name = 'Uncategorized'
+                        except:
+                            category_name = 'Uncategorized'
+                        
+                        # Create category object
+                        class CategoryAdapter:
+                            def __init__(self, name='Uncategorized'):
+                                self.name = name
+                        
+                        self.category = CategoryAdapter(category_name)
                 
-                self.product = ProductAdapter(fs_item)
+                self.product = ProductAdapter(fs_item, self.product_id)
             
             @property
             def subtotal(self):
@@ -5181,8 +5612,8 @@ def buyer_cart():
                          cart_products=cart_items,
                          total=total)
 
-@app.route('/product/<int:product_id>')
-@app.route('/product/<int:product_id>/<slug>')
+@app.route('/product/<product_id>')
+@app.route('/product/<product_id>/<slug>')
 def product_detail(product_id, slug=None):
     """Product detail page with SEO-friendly URLs - HYBRID: Firestore + SQL"""
     from firestore_helper import get_product_firestore, get_reviews_firestore
@@ -5204,6 +5635,8 @@ def product_detail(product_id, slug=None):
                 self.category_name = fs_prod.get('category', 'Uncategorized')
                 self.seller_id = int(fs_prod.get('sellerId', 0))
                 self.rating = fs_prod.get('rating', 0)
+                self.average_rating = self.rating
+                self.review_count = fs_prod.get('reviewCount', 0)
                 self.total_sold = fs_prod.get('totalSold', 0)
                 self.is_active = fs_prod.get('isActive', True)
                 self.approval_status = fs_prod.get('approvalStatus', 'approved')
@@ -5279,15 +5712,21 @@ def product_detail(product_id, slug=None):
         
     else:
         # Fallback to SQL if not in Firestore
-        product = Product.query.get_or_404(product_id)
+        try:
+            sql_product_id = int(product_id)
+        except ValueError:
+            from flask import abort
+            abort(404)
+            
+        product = Product.query.get_or_404(sql_product_id)
         
         # Get product reviews from SQL
-        reviews = Review.query.filter_by(product_id=product_id, is_approved=True).order_by(Review.created_at.desc()).limit(10).all()
+        reviews = Review.query.filter_by(product_id=sql_product_id, is_approved=True).order_by(Review.created_at.desc()).limit(10).all()
         
         # Get related products from SQL
         related_products = Product.query.filter(
             Product.category_id == product.category_id,
-            Product.id != product_id,
+            Product.id != sql_product_id,
             Product.is_active == True,
             Product.approval_status == 'approved'
         ).limit(4).all()
@@ -5308,7 +5747,10 @@ def product_detail(product_id, slug=None):
         
         # Check if this product is in cart
         for item in cart_items:
-            if int(item.get('productId', 0)) == product_id:
+            # Handle both string (Firestore doc ID) and int (SQL ID) productId
+            item_product_id = item.get('productId', 0)
+            # Convert both to string for comparison to handle mixed types
+            if str(item_product_id) == str(product_id):
                 in_cart = True
                 cart_quantity = item.get('quantity', 0)
                 break
@@ -5470,8 +5912,11 @@ def buyer_checkout():
     user = get_current_user()
     from firestore_helper import get_cart_items_firestore, clear_cart_firestore
     
+    # Use Firebase UID for cross-platform sync
+    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    
     # Get cart items from Firestore
-    firestore_items = get_cart_items_firestore(str(user.id))
+    firestore_items = get_cart_items_firestore(user_id)
     
     # Support checking out selected items only
     selected_ids_param = request.args.get('selected_ids') if request.method == 'GET' else request.form.get('selected_ids')
@@ -5494,14 +5939,21 @@ def buyer_checkout():
     class CartItemAdapter:
         def __init__(self, fs_item):
             self.id = fs_item.get('id')
-            self.product_id = int(fs_item.get('productId', 0))
-            self.quantity = fs_item.get('quantity', 0)
+            # Handle both string (Firestore doc ID from mobile) and int (SQL ID from web)
+            raw_product_id = fs_item.get('productId', 0)
+            self.product_id = raw_product_id
+            self.quantity = int(fs_item.get('quantity', 0))
             self.variant = fs_item.get('variant')
             self.selected_weight = fs_item.get('selectedWeight')
             self.unit_price = Decimal(str(fs_item.get('price', 0)))
             
-            # Fetch actual product from SQL for stock checking
-            self.product = Product.query.get(self.product_id)
+            # Fetch actual product from SQL for stock checking (only if it's an integer ID)
+            self.product = None
+            if isinstance(raw_product_id, int) or (isinstance(raw_product_id, str) and raw_product_id.isdigit()):
+                try:
+                    self.product = Product.query.get(int(raw_product_id))
+                except:
+                    pass
         
         @property
         def subtotal(self):
@@ -5526,33 +5978,104 @@ def buyer_checkout():
                                  cart_products=cart_items,
                                  total=total,
                                  saved_addresses=saved_addresses,
-                                 current_user=user)
+                                 current_user=user,
+                                 selected_ids=selected_ids)
         
-        # Create order
-        order = Order(
-            order_number=f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            buyer_id=user.id,
-            payment_method=payment_method,
-            subtotal=total,
-            tax_amount=total * 0.08,  # 8% tax
-            shipping_amount=0,  # Free shipping
-            total_amount=total * 1.08,
-            shipping_address=shipping_address,
-            status='pending',
-            payment_status='pending'
-        )
+        # Create order in Firestore
+        from firestore_helper import create_order_firestore
+        
+        # Use Firebase UID for cross-platform sync
+        buyer_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        
+        order_data = {
+            'orderNumber': f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            'buyerId': buyer_id,  # ✅ Use Firebase UID
+            'paymentMethod': payment_method,
+            'subtotal': float(total),
+            'taxAmount': float(total * 0.08),  # 8% tax
+            'shippingAmount': 0.0,  # Free shipping
+            'totalAmount': float(total * 1.08),
+            'shippingAddress': shipping_address,
+            'status': 'pending',
+            'paymentStatus': 'pending',
+            'items': []  # Will be populated below
+        }
         
         try:
-            db.session.add(order)
-            db.session.flush()  # Get the order ID
-            
             # Create order items and check inventory
             order_items = []
             skipped_items = []
             items_to_remove = []
+            seller_totals = {}
             
             for cart_item in cart_items:
-                # Check if enough inventory
+                # Check if product exists (web products only have SQL records)
+                if cart_item.product is None:
+                    # Mobile product - skip inventory check (managed in Firestore)
+                    # Get product details from Firestore
+                    product_id_str = str(cart_item.product_id)
+                    
+                    # Try to get product from Firestore
+                    from firestore_helper import get_product_firestore
+                    fs_product = get_product_firestore(product_id_str)
+                    
+                    if not fs_product:
+                        skipped_items.append({
+                            'name': f'Product {product_id_str}',
+                            'requested': cart_item.quantity,
+                            'available': 0
+                        })
+                        items_to_remove.append(cart_item.id)
+                        continue
+                    
+                    # Check Firestore stock
+                    fs_stock = fs_product.get('stock', 0)
+                    if fs_stock < cart_item.quantity:
+                        skipped_items.append({
+                            'name': fs_product.get('name', f'Product {product_id_str}'),
+                            'requested': cart_item.quantity,
+                            'available': fs_stock
+                        })
+                        items_to_remove.append(cart_item.id)
+                        continue
+                    
+                    # Add item to order data (Firestore product)
+                    item_data = {
+                        'productId': product_id_str,
+                        'productName': fs_product.get('name', 'Unknown Product'),
+                        'productImage': fs_product.get('imageUrl', ''),
+                        'sellerId': fs_product.get('sellerId', ''),
+                        'sqlSellerId': None,
+                        'quantity': cart_item.quantity,
+                        'unitPrice': float(cart_item.unit_price),
+                        'totalPrice': float(cart_item.subtotal)
+                    }
+                    order_data['items'].append(item_data)
+                    order_items.append(item_data)
+                    
+                    # Try to map Firestore seller to SQL seller for commissions
+                    try:
+                        seller_str = fs_product.get('sellerId', '')
+                        if seller_str.isdigit():
+                            s_id = int(seller_str)
+                            if s_id not in seller_totals:
+                                seller_totals[s_id] = 0
+                            seller_totals[s_id] += float(cart_item.subtotal)
+                            item_data['sqlSellerId'] = s_id
+                        else:
+                            # Find user by firebase_uid
+                            seller_user = User.query.filter_by(firebase_uid=seller_str).first()
+                            if seller_user:
+                                if seller_user.id not in seller_totals:
+                                    seller_totals[seller_user.id] = 0
+                                seller_totals[seller_user.id] += float(cart_item.subtotal)
+                                item_data['sqlSellerId'] = seller_user.id
+                    except:
+                        pass
+                        
+                    continue
+                
+                # Web product - check SQL inventory
                 if cart_item.product.stock_quantity < cart_item.quantity:
                     # Skip this item and notify user
                     skipped_items.append({
@@ -5563,49 +6086,102 @@ def buyer_checkout():
                     items_to_remove.append(cart_item.id)
                     continue
                 
-                # Add item to order
-                order_item = OrderItem(
-                    order_id=order.id,
-                    product_id=cart_item.product_id,
-                    seller_id=cart_item.product.seller_id,
-                    quantity=cart_item.quantity,
-                    unit_price=float(cart_item.unit_price if cart_item.unit_price is not None else cart_item.product.price),
-                    total_price=float(cart_item.subtotal)
-                )
-                db.session.add(order_item)
-                order_items.append(order_item)
+                # Get seller's Firebase UID for cross-platform sync
+                seller = User.query.get(cart_item.product.seller_id)
+                seller_firebase_uid = seller.firebase_uid if seller and seller.firebase_uid else str(cart_item.product.seller_id)
+                
+                # Add item to order data (Firestore)
+                item_data = {
+                    'productId': str(cart_item.product_id),
+                    'productName': cart_item.product.name,
+                    'productImage': cart_item.product.image_url if hasattr(cart_item.product, 'image_url') else '',
+                    'sellerId': seller_firebase_uid,  # ✅ Use Firebase UID
+                    'sqlSellerId': cart_item.product.seller_id,
+                    'quantity': cart_item.quantity,
+                    'unitPrice': float(cart_item.unit_price if cart_item.unit_price is not None else cart_item.product.price),
+                    'totalPrice': float(cart_item.subtotal)
+                }
+                order_data['items'].append(item_data)
+                order_items.append(item_data)
+                
+                # Track seller totals for commissions
+                if cart_item.product.seller_id not in seller_totals:
+                    seller_totals[cart_item.product.seller_id] = 0
+                seller_totals[cart_item.product.seller_id] += float(cart_item.subtotal)
             
             # If no items can be ordered, cancel the order
             if not order_items:
-                db.session.rollback()
                 flash('None of the items in your cart are available. Please remove out-of-stock items and try again.', 'error')
                 for item in skipped_items:
                     flash(f"{item['name']}: Requested {item['requested']}, but only {item['available']} available", 'warning')
                 return render_template('buyer/checkout.html', 
                                      cart_products=cart_items,
                                      total=total,
-                                     current_user=user)
+                                     current_user=user,
+                                     selected_ids=selected_ids)
             
             # Recalculate total for available items only
-            actual_total = sum(float(item.total_price) for item in order_items)
-            order.subtotal = actual_total
-            order.tax_amount = actual_total * 0.08
-            order.total_amount = actual_total * 1.08
+            actual_total = sum(item['totalPrice'] for item in order_items)
+            order_data['subtotal'] = actual_total
+            order_data['taxAmount'] = actual_total * 0.08
+            order_data['totalAmount'] = actual_total * 1.08
             
-            # Reduce inventory after order placement
-            reduce_inventory(order_items)
+            # Create order in Firestore
+            order_id = create_order_firestore(order_data)
             
-            # Create commission records for each seller
-            seller_totals = {}
+            # Reduce inventory after order placement (still use SQL for inventory)
+            # Create SQL order for inventory tracking and commissions
+            sql_order = Order(
+                order_number=order_data['orderNumber'],
+                buyer_id=user.id,
+                payment_method=payment_method,
+                subtotal=actual_total,
+                tax_amount=actual_total * 0.08,
+                shipping_amount=0,
+                total_amount=actual_total * 1.08,
+                shipping_address=shipping_address,
+                status='pending',
+                payment_status='pending',
+                firestore_order_id=order_id  # Link to Firestore
+            )
+            db.session.add(sql_order)
+            db.session.flush()
+            
+            # Create SQL order items for inventory tracking (only for web products with SQL IDs)
+            sql_order_items = []
             for item in order_items:
-                if item.seller_id not in seller_totals:
-                    seller_totals[item.seller_id] = 0
-                seller_totals[item.seller_id] += float(item.total_price)
+                product_id = item['productId']
+                # Only create SQL order item if productId is a valid integer (web products)
+                # Mobile products use Firestore doc IDs (strings) and don't need SQL tracking
+                if isinstance(product_id, int) or (isinstance(product_id, str) and product_id.isdigit()):
+                    try:
+                        sql_seller_id = item.get('sqlSellerId')
+                        if sql_seller_id is None:
+                            continue
+                            
+                        sql_order_item = OrderItem(
+                            order_id=sql_order.id,
+                            product_id=int(product_id),
+                            seller_id=sql_seller_id,
+                            quantity=item['quantity'],
+                            unit_price=item['unitPrice'],
+                            total_price=item['totalPrice']
+                        )
+                        db.session.add(sql_order_item)
+                        sql_order_items.append(sql_order_item)
+                    except (ValueError, TypeError):
+                        # Skip if conversion fails (mobile product)
+                        pass
             
+            # Reduce inventory
+            if sql_order_items:
+                reduce_inventory(sql_order_items)
+            
+            # Create commission records for each seller (still use SQL)
             for seller_id, seller_total in seller_totals.items():
                 commission_rate, commission_amount = calculate_commission(seller_total, seller_id)
                 commission = Commission(
-                    order_id=order.id,
+                    order_id=sql_order.id,
                     seller_id=seller_id,
                     order_amount=seller_total,
                     commission_rate=commission_rate,
@@ -5631,11 +6207,11 @@ def buyer_checkout():
             
             # Remove items from Firestore
             for cart_id in cart_ids_to_remove:
-                remove_from_cart_firestore(str(user.id), cart_id)
+                remove_from_cart_firestore(user_id, cart_id)
             
             # Also remove out-of-stock items from Firestore
             for item_id in items_to_remove:
-                remove_from_cart_firestore(str(user.id), str(item_id))
+                remove_from_cart_firestore(user_id, str(item_id))
             
             db.session.commit()
             
@@ -5644,18 +6220,21 @@ def buyer_checkout():
                 seller = User.query.get(seller_id)
                 if seller:
                     # Get products from this seller in the order
-                    seller_products = [item.product.name for item in order_items if item.seller_id == seller_id]
+                    seller_products = [item['productName'] for item in order_items if item.get('sqlSellerId') == seller_id]
+                    if not seller_products:
+                        continue
+                        
                     products_list = ", ".join(seller_products[:3])  # Show first 3 products
                     if len(seller_products) > 3:
                         products_list += f" and {len(seller_products) - 3} more"
                     
                     # Buyer sends message to seller
-                    buyer_message = f"Hi! I just placed an order #{order.order_number} for {products_list}. Total: ${seller_totals[seller_id]:.2f}. Looking forward to receiving my items!"
-                    send_automatic_message(user.id, seller_id, buyer_message, order.id)
+                    buyer_message = f"Hi! I just placed an order #{order_data['orderNumber']} for {products_list}. Total: ${seller_totals[seller_id]:.2f}. Looking forward to receiving my items!"
+                    send_automatic_message(user.id, seller_id, buyer_message, sql_order.id)
                     
                     # Seller auto-replies to buyer
-                    seller_reply = f"Thank you for your order #{order.order_number}! We've received your order for {products_list}. We'll start preparing your items and keep you updated. If you have any questions, feel free to message us!"
-                    send_automatic_message(seller_id, user.id, seller_reply, order.id)
+                    seller_reply = f"Thank you for your order #{order_data['orderNumber']}! We've received your order for {products_list}. We'll start preparing your items and keep you updated. If you have any questions, feel free to message us!"
+                    send_automatic_message(seller_id, user.id, seller_reply, sql_order.id)
             
             # Show success message with warnings for skipped items
             flash('Order placed successfully!', 'success')
@@ -5669,13 +6248,18 @@ def buyer_checkout():
         except Exception as e:
             db.session.rollback()
             flash('Error processing order. Please try again.', 'error')
+            import traceback
+            with open('checkout_error.log', 'w') as f:
+                f.write(f"Order processing error: {e}\n")
+                f.write(traceback.format_exc())
             print(f"Order processing error: {e}")
     
     return render_template('buyer/checkout.html', 
                          cart_products=cart_items,
                          total=total,
                          saved_addresses=saved_addresses,
-                         current_user=user)
+                         current_user=user,
+                         selected_ids=selected_ids)
 
 @app.route('/api/buyer/order-updates')
 @login_required
@@ -5762,10 +6346,21 @@ def buyer_about():
 @app.route('/buyer/order_confirmation')
 @login_required
 def order_confirmation():
-    # Get the latest order for the user
+    # Get the latest order for the user from Firestore
     user = get_current_user()
-    latest_order = Order.query.filter_by(buyer_id=user.id).order_by(Order.created_at.desc()).first()
-    return render_template('buyer/order_confirmation.html', order=latest_order)
+    from firestore_helper import get_orders_firestore
+    
+    orders = get_orders_firestore(str(user.id), 'buyer')
+    latest_order = orders[0] if orders else None
+    
+    # If no Firestore orders, fall back to SQL
+    if not latest_order:
+        latest_order = Order.query.filter_by(buyer_id=user.id).order_by(Order.created_at.desc()).first()
+    
+    # Normalize order for template compatibility
+    normalized_order = normalize_order_for_template(latest_order) if latest_order else None
+    
+    return render_template('buyer/order_confirmation.html', order=normalized_order)
 
 @app.route('/buyer/orders')
 @login_required
@@ -5775,125 +6370,207 @@ def buyer_orders():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status')
     
-    query = Order.query.filter_by(buyer_id=user.id).order_by(Order.created_at.desc())
+    # Try to get orders from Firestore first
+    from firestore_helper import get_orders_firestore
+    # Use Firebase UID for cross-platform sync
+    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    orders = get_orders_firestore(user_id, 'buyer')
+    
+    # Apply status filter if provided
     if status_filter:
-        query = query.filter(Order.status == status_filter)
-    orders = query.paginate(page=page, per_page=10, error_out=False)
+        orders = [o for o in orders if o.get('status') == status_filter]
+    
+    # Manual pagination for Firestore orders
+    per_page = 10
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_orders = orders[start_idx:end_idx]
+    
+    # Normalize orders for template compatibility
+    normalized_orders = [normalize_order_for_template(order) for order in paginated_orders]
+    
+    # Create a simple pagination object
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+    
+    orders_paginated = SimplePagination(normalized_orders, page, per_page, len(orders))
     
     # Build reviewed set to mark items that already have reviews
-    order_ids = [o.id for o in orders.items]
+    # Note: This will need to be updated when reviews are migrated to Firestore
+    order_ids = [o.get('id') for o in paginated_orders]
     reviewed_pairs = set()
-    if order_ids:
-        user = get_current_user()
-        user_reviews = Review.query.filter(Review.user_id == user.id, Review.order_id.in_(order_ids)).all()
-        for r in user_reviews:
-            reviewed_pairs.add((r.product_id, r.order_id))
+    # For now, skip review checking since reviews are still in SQL
+    # This will be updated in Phase 4 (Review Sync)
     
-    return render_template('buyer/orders.html', orders=orders, current_status=status_filter, reviewed_pairs=reviewed_pairs)
+    return render_template('buyer/orders.html', orders=orders_paginated, current_status=status_filter, reviewed_pairs=reviewed_pairs)
 
-@app.route('/buyer/order/<int:order_id>')
+@app.route('/buyer/order/<order_id>')
 @login_required
 def buyer_order_detail(order_id):
     """View detailed order information"""
     user = get_current_user()
-    order = Order.query.filter_by(id=order_id, buyer_id=user.id).first_or_404()
     
-    return render_template('buyer/order_detail.html', order=order)
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore
+    order = get_order_firestore(order_id)
+    
+    # If not in Firestore, fall back to SQL
+    if not order:
+        # Try to parse as integer for SQL fallback
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.filter_by(id=order_id_int, buyer_id=user.id).first_or_404()
+        except ValueError:
+            return render_template('errors/404.html'), 404
+    else:
+        # Verify the order belongs to this user
+        if order.get('buyerId') != str(user.id):
+            return render_template('errors/404.html'), 404
+    
+    # Normalize order for template compatibility
+    normalized_order = normalize_order_for_template(order)
+    
+    return render_template('buyer/order_detail.html', order=normalized_order)
 
-@app.route('/buyer/orders/<int:order_id>/confirm', methods=['POST'])
+@app.route('/buyer/orders/<order_id>/confirm', methods=['POST'])
 @login_required
 def confirm_order_receipt(order_id):
     """Buyer confirms receipt of a delivered order. Only then update sellers' sales records."""
     user = get_current_user()
-    order = Order.query.filter_by(id=order_id, buyer_id=user.id).first_or_404()
     
-    if order.status != 'delivered':
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore, update_order_status_firestore
+    order = get_order_firestore(order_id)
+    
+    # If not in Firestore, fall back to SQL
+    if not order:
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.filter_by(id=order_id_int, buyer_id=user.id).first_or_404()
+            is_firestore = False
+        except ValueError:
+            return render_template('errors/404.html'), 404
+    else:
+        # Verify the order belongs to this user
+        if order.get('buyerId') != str(user.id):
+            return render_template('errors/404.html'), 404
+        is_firestore = True
+    
+    # Check status based on data source
+    order_status = order.get('status') if is_firestore else order.status
+    if order_status != 'delivered':
         flash('Order must be delivered before confirmation.', 'error')
         return redirect(url_for('buyer_orders'))
     
     # Store old status for logging
-    old_status = order.status
-    
-    # Update order status to completed
-    order.status = 'completed'
-    order.payment_status = 'paid'
-    order.auto_confirmed_at = utc_now()
-    
-    # Log the status change
-    log_order_status_change(
-        order_id=order.id,
-        user_id=user.id,
-        user_role='buyer',
-        old_status=old_status,
-        new_status='completed',
-        notes='Buyer confirmed receipt of order'
-    )
-    
-    # Update seller statistics for each item in the order
-    for item in order.order_items:
-        seller = User.query.get(item.seller_id)
-        if seller:
-            # Get or create seller statistics for today
-            today = utc_now().date()
-            stats = SellerStatistics.query.filter_by(seller_id=seller.id, date=today).first()
-            if not stats:
-                stats = SellerStatistics(seller_id=seller.id, date=today)
-                db.session.add(stats)
-            
-            # Update statistics
-            stats.total_orders = (stats.total_orders or 0) + 1
-            stats.total_revenue = (stats.total_revenue or Decimal('0')) + Decimal(str(item.total_price))
-    
-    # Collect commissions when buyer confirms receipt
-    commissions = Commission.query.filter_by(order_id=order.id, status='pending').all()
-    for commission in commissions:
-        commission.status = 'collected'
+    old_status = order_status
     
     try:
-        db.session.commit()
-        flash('✅ Order confirmed successfully!', 'success')
+        # Update order status to completed
+        if is_firestore:
+            update_order_status_firestore(order_id, 'completed', str(user.id))
+            # Also update SQL order if it exists
+            try:
+                sql_order = Order.query.filter_by(firestore_order_id=order_id).first()
+                if sql_order:
+                    sql_order.status = 'completed'
+                    sql_order.payment_status = 'paid'
+                    sql_order.auto_confirmed_at = utc_now()
+            except:
+                pass
+        else:
+            order.status = 'completed'
+            order.payment_status = 'paid'
+            order.auto_confirmed_at = utc_now()
+            db.session.commit()
         
-        # Notify sellers that order is completed
-        notified_sellers = set()
-        for item in order.order_items:
-            if item.seller_id not in notified_sellers:
-                create_notification(
-                    user_id=item.seller_id,
-                    notification_type='order_update',
-                    category='order',
-                    title='✅ Order Completed!',
-                    message=f'Buyer confirmed receipt of order #{order.order_number}. Payment will be released.',
-                    priority='high',
-                    action_url=url_for('seller_orders'),
-                    action_text='View Orders'
-                )
-                notified_sellers.add(item.seller_id)
-        
-        # Notify rider that order is completed
-        if order.rider_id:
-            create_notification(
-                user_id=order.rider_id,
-                notification_type='order_update',
-                category='delivery',
-                title='✅ Delivery Completed!',
-                message=f'Buyer confirmed receipt of order #{order.order_number}. Your commission will be released.',
-                priority='high',
-                action_url=url_for('rider_orders'),
-                action_text='View Orders'
+        # Log the status change (only for SQL orders)
+        if not is_firestore:
+            log_order_status_change(
+                order_id=order.id,
+                user_id=user.id,
+                user_role='buyer',
+                old_status=old_status,
+                new_status='completed',
+                notes='Buyer confirmed receipt of order'
             )
         
-        # Create notification for the buyer
-        notification = Notification(
-            user_id=user.id,
-            type='order_update',
-            category='order',
-            priority='medium',
-            title='Order Confirmed',
-            message=f'You have successfully confirmed receipt of order #{order.order_number}.',
-            data={'order_id': order.id, 'order_number': order.order_number}
-        )
-        db.session.add(notification)
-        db.session.commit()
+        # Update seller statistics for each item in the order (SQL only)
+        if not is_firestore:
+            for item in order.order_items:
+                seller = User.query.get(item.seller_id)
+                if seller:
+                    # Get or create seller statistics for today
+                    today = utc_now().date()
+                    stats = SellerStatistics.query.filter_by(seller_id=seller.id, date=today).first()
+                    if not stats:
+                        stats = SellerStatistics(seller_id=seller.id, date=today)
+                        db.session.add(stats)
+                    
+                    # Update statistics
+                    stats.total_orders = (stats.total_orders or 0) + 1
+                    stats.total_revenue = (stats.total_revenue or Decimal('0')) + Decimal(str(item.total_price))
+            
+            # Collect commissions when buyer confirms receipt
+            commissions = Commission.query.filter_by(order_id=order.id, status='pending').all()
+            for commission in commissions:
+                commission.status = 'collected'
+            
+            db.session.commit()
+        
+        flash('✅ Order confirmed successfully!', 'success')
+        
+        # Notify sellers that order is completed (SQL only for now)
+        if not is_firestore:
+            notified_sellers = set()
+            for item in order.order_items:
+                if item.seller_id not in notified_sellers:
+                    create_notification(
+                        user_id=item.seller_id,
+                        notification_type='order_update',
+                        category='order',
+                        title='✅ Order Completed!',
+                        message=f'Buyer confirmed receipt of order #{order.order_number}. Payment will be released.',
+                        priority='high',
+                        action_url=url_for('seller_orders'),
+                        action_text='View Orders'
+                    )
+                    notified_sellers.add(item.seller_id)
+            
+            # Notify rider that order is completed
+            if order.rider_id:
+                create_notification(
+                    user_id=order.rider_id,
+                    notification_type='order_update',
+                    category='delivery',
+                    title='✅ Delivery Completed!',
+                    message=f'Buyer confirmed receipt of order #{order.order_number}. Your commission will be released.',
+                    priority='high',
+                    action_url=url_for('rider_orders'),
+                    action_text='View Orders'
+                )
+            
+            # Create notification for the buyer
+            notification = Notification(
+                user_id=user.id,
+                type='order_update',
+                category='order',
+                priority='medium',
+                title='Order Confirmed',
+                message=f'You have successfully confirmed receipt of order #{order.order_number}.',
+                data={'order_id': order.id, 'order_number': order.order_number}
+            )
+            db.session.add(notification)
+            db.session.commit()
         
     except Exception as e:
         db.session.rollback()
@@ -5925,7 +6602,9 @@ def buyer_profile():
     
     # Get wishlist count from Firestore
     from firestore_helper import get_wishlist_items_firestore
-    wishlist_items = get_wishlist_items_firestore(str(user.id))
+    # Use Firebase UID for cross-platform sync
+    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    wishlist_items = get_wishlist_items_firestore(user_id)
     wishlist_count = len(wishlist_items)
     
     # Get unread notifications count
@@ -6055,18 +6734,51 @@ def buyer_profile_wishlist():
     
     from firestore_helper import get_wishlist_items_firestore
     
+    # Use Firebase UID for cross-platform sync
+    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    
     # Get wishlist items from Firestore
-    firestore_items = get_wishlist_items_firestore(str(user.id))
+    firestore_items = get_wishlist_items_firestore(user_id)
     
     # Convert to objects for template compatibility
     class WishlistItemAdapter:
         def __init__(self, fs_item):
             self.id = fs_item.get('id')
-            self.product_id = int(fs_item.get('productId', 0))
+            # Handle both string (Firestore doc ID from mobile) and int (SQL ID from web)
+            raw_product_id = fs_item.get('productId', 0)
+            self.product_id = raw_product_id
             self.created_at = fs_item.get('addedAt')
             
-            # Fetch actual product from SQL
-            self.product = Product.query.get(self.product_id)
+            # Create a product-like object
+            class ProductAdapter:
+                def __init__(self, fs_item, product_id):
+                    # Keep product_id as-is (string or int)
+                    self.id = product_id
+                    self.name = fs_item.get('productName', 'Unknown Product')
+                    self.image_url = fs_item.get('productImage', '')
+                    self.price = Decimal(str(fs_item.get('price', 0)))
+                    
+                    # Check if this is a web product (has integer SQL ID) or mobile product (Firestore doc ID)
+                    self.is_web_product = isinstance(product_id, int) or (isinstance(product_id, str) and product_id.isdigit())
+                    # For templates: only web products have detail pages
+                    self.web_id = int(product_id) if self.is_web_product else None
+                    
+                    # Try to get full product data from SQL if it's a web product
+                    if self.is_web_product:
+                        try:
+                            sql_product = Product.query.get(int(product_id))
+                            if sql_product:
+                                self.name = sql_product.name
+                                self.image_url = sql_product.image_url or ''
+                                self.price = sql_product.price
+                                self.stock_quantity = sql_product.stock_quantity
+                                self.brand = sql_product.brand
+                                if sql_product.category:
+                                    self.category = sql_product.category
+                        except:
+                            pass
+            
+            self.product = ProductAdapter(fs_item, self.product_id)
     
     wishlist_items = [WishlistItemAdapter(item) for item in firestore_items]
     return render_template('buyer/profile/wishlist.html', wishlist_items=wishlist_items)
@@ -6317,6 +7029,51 @@ def api_submit_review():
             db.session.add(review)
         
         db.session.commit()
+        
+        # ✅ SYNC TO FIRESTORE - Add/update review in Firestore for mobile app
+        try:
+            from firestore_helper import add_review_firestore, get_firestore_client
+            
+            review_data = {
+                'productId': str(product_id),
+                'userId': str(user.id),
+                'buyerId': str(user.id),
+                'buyerName': user.full_name if hasattr(user, 'full_name') else user.username,
+                'orderId': str(order_id),
+                'rating': rating,
+                'title': title or '',
+                'comment': comment or '',
+                'isVerified': True,
+                'isApproved': True,
+                'sqlReviewId': str(review.id),  # Link to SQL for reference
+                'helpfulCount': 0
+            }
+            
+            # Check if review already exists in Firestore (by sqlReviewId)
+            db_firestore = get_firestore_client()
+            existing_reviews = db_firestore.collection('reviews').where('sqlReviewId', '==', str(review.id)).limit(1).stream()
+            
+            review_exists = False
+            for fs_review in existing_reviews:
+                # Update existing review
+                fs_review.reference.update({
+                    'rating': rating,
+                    'title': title or '',
+                    'comment': comment or '',
+                    'updatedAt': firestore.SERVER_TIMESTAMP
+                })
+                print(f"✅ Review updated in Firestore: {fs_review.id}")
+                review_exists = True
+                break
+            
+            if not review_exists:
+                # Create new review
+                firestore_review_id = add_review_firestore(review_data)
+                print(f"✅ Review synced to Firestore: {firestore_review_id}")
+        except Exception as firestore_error:
+            print(f"⚠️ Firestore sync failed (review still saved in SQL): {firestore_error}")
+            # Don't fail the whole operation if Firestore sync fails
+        
         return jsonify({'success': True, 'message': 'Review submitted successfully.'})
     except Exception as e:
         db.session.rollback()
@@ -6341,12 +7098,39 @@ def seller_dashboard():
     ).order_by(Product.stock_quantity).limit(5).all()
     
     # === ORDER STATISTICS ===  
-    # Get all order items for this seller
-    order_items = OrderItem.query.filter_by(seller_id=user.id).all()
-    total_orders = len(order_items)
+    # 1. Get SQL order items for this seller
+    sql_order_items = OrderItem.query.filter_by(seller_id=user.id).all()
+    
+    # 2. Get Firestore orders for this seller
+    from firestore_helper import get_orders_firestore
+    user_firebase_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    all_fs_orders = get_orders_firestore(None, 'admin')
+    
+    fs_seller_orders = []
+    fs_order_items = []
+    for order in all_fs_orders:
+        has_seller_item = False
+        order_seller_id = str(order.get('sellerId'))
+        items = order.get('items', [])
+        for item in items:
+            item_seller_id = str(item.get('sellerId'))
+            item_sql_seller_id = str(item.get('sqlSellerId'))
+            if (item_seller_id == str(user_firebase_id) or 
+                item_seller_id == str(user.id) or
+                item_sql_seller_id == str(user.id) or
+                order_seller_id == str(user_firebase_id) or 
+                order_seller_id == str(user.id)):
+                has_seller_item = True
+                fs_order_items.append(item)
+        if has_seller_item:
+            fs_seller_orders.append(normalize_order_for_template(order))
+    
+    total_orders = len(set([item.order_id for item in sql_order_items])) + len(fs_seller_orders)
     
     # Calculate revenue
-    total_revenue = sum(float(item.total_price) for item in order_items)
+    sql_revenue = sum(float(item.total_price) for item in sql_order_items)
+    fs_revenue = sum(float(item.get('totalPrice', item.get('price', 0) * item.get('quantity', 1))) for item in fs_order_items)
+    total_revenue = sql_revenue + fs_revenue
     
     # Commission calculation (10% to admin)
     admin_commission_rate = 0.10
@@ -6354,30 +7138,37 @@ def seller_dashboard():
     net_earnings = total_revenue - admin_commission
     
     # Orders by status
-    pending_orders = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id,
-        Order.status.in_(['pending', 'confirmed'])
-    ).distinct().count()
+    sql_pending = Order.query.join(OrderItem).filter(OrderItem.seller_id == user.id, Order.status.in_(['pending', 'confirmed'])).distinct().count()
+    fs_pending = sum(1 for o in fs_seller_orders if o.status in ['pending', 'confirmed'])
+    pending_orders = sql_pending + fs_pending
     
-    preparing_orders = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id,
-        Order.status == 'preparing'
-    ).distinct().count()
+    sql_preparing = Order.query.join(OrderItem).filter(OrderItem.seller_id == user.id, Order.status == 'preparing').distinct().count()
+    fs_preparing = sum(1 for o in fs_seller_orders if o.status == 'preparing')
+    preparing_orders = sql_preparing + fs_preparing
     
-    ready_for_pickup = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id,
-        Order.status == 'for_pickup'
-    ).distinct().count()
+    sql_ready = Order.query.join(OrderItem).filter(OrderItem.seller_id == user.id, Order.status == 'for_pickup').distinct().count()
+    fs_ready = sum(1 for o in fs_seller_orders if o.status == 'for_pickup')
+    ready_for_pickup = sql_ready + fs_ready
     
-    completed_orders = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id,
-        Order.status.in_(['delivered', 'completed'])
-    ).distinct().count()
+    sql_completed = Order.query.join(OrderItem).filter(OrderItem.seller_id == user.id, Order.status.in_(['delivered', 'completed'])).distinct().count()
+    fs_completed = sum(1 for o in fs_seller_orders if o.status in ['delivered', 'completed'])
+    completed_orders = sql_completed + fs_completed
     
     # Recent orders (last 10)
-    recent_orders = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id
-    ).order_by(Order.created_at.desc()).limit(10).distinct().all()
+    sql_recent = Order.query.join(OrderItem).filter(OrderItem.seller_id == user.id).order_by(Order.created_at.desc()).limit(10).distinct().all()
+    
+    # Combine and sort recent orders
+    def get_order_time(order):
+        dt = getattr(order, 'created_at', None) or getattr(order, 'createdAt', None)
+        if dt is None:
+            return datetime.min
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+        
+    all_recent = list(sql_recent) + fs_seller_orders
+    all_recent.sort(key=get_order_time, reverse=True)
+    recent_orders = all_recent[:10]
     
     # === SALES CHART DATA (Last 7 Days) ===
     sales_chart_data = []
@@ -6386,7 +7177,7 @@ def seller_dashboard():
         day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = date.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        daily_revenue = db.session.query(
+        sql_daily_revenue = db.session.query(
             db.func.sum(OrderItem.total_price)
         ).join(Order).filter(
             OrderItem.seller_id == user.id,
@@ -6394,6 +7185,23 @@ def seller_dashboard():
             Order.created_at <= day_end,
             Order.status.in_(['delivered', 'completed'])
         ).scalar() or 0
+        
+        fs_daily_revenue = 0
+        for o in fs_seller_orders:
+            if o.status in ['delivered', 'completed'] and day_start <= o.created_at <= day_end:
+                # Sum items belonging to this seller
+                order_seller_id = str(o._data.get('sellerId'))
+                for item in o._data.get('items', []):
+                    item_seller_id = str(item.get('sellerId'))
+                    item_sql_seller_id = str(item.get('sqlSellerId'))
+                    if (item_seller_id == str(user_firebase_id) or 
+                        item_seller_id == str(user.id) or
+                        item_sql_seller_id == str(user.id) or
+                        order_seller_id == str(user_firebase_id) or
+                        order_seller_id == str(user.id)):
+                        fs_daily_revenue += float(item.get('totalPrice', item.get('price', 0) * item.get('quantity', 1)))
+        
+        daily_revenue = float(sql_daily_revenue) + float(fs_daily_revenue)
         
         sales_chart_data.append({
             'date': date.strftime('%a'),
@@ -6703,6 +7511,45 @@ def add_product():
             db.session.add(approval_history)
             db.session.commit()
             
+            # ✅ SYNC TO FIRESTORE - Add product to Firestore for mobile app
+            try:
+                from firestore_helper import create_product_firestore
+                
+                # Use Firebase UID for cross-platform sync (same as cart fix)
+                seller_id = user.firebase_uid if user.firebase_uid else str(user.id)
+                
+                product_data = {
+                    'sellerId': seller_id,  # ✅ Use Firebase UID for mobile sync
+                    'sellerName': user.full_name if hasattr(user, 'full_name') else user.username,
+                    'categoryId': str(category.id),
+                    'category': category.name,
+                    'name': name,
+                    'brand': brand or '',
+                    'description': description or '',
+                    'price': float(price),
+                    'stockQuantity': stock,
+                    'stock': stock,  # Add both for compatibility
+                    'weight': float(weight) if weight else 0.0,
+                    'dimensions': dimensions or '',
+                    'imageUrl': product.image_url or '',
+                    'galleryImages': gallery_images,
+                    'images': gallery_images,  # Add both for compatibility
+                    'isActive': True,
+                    'approvalStatus': 'pending',  # ✅ Requires admin approval
+                    'sqlProductId': str(product.id),  # Link to SQL for reference
+                    'totalSold': 0,
+                    'averageRating': 0.0,
+                    'reviewCount': 0
+                }
+                
+                firestore_product_id = create_product_firestore(product_data)
+                print(f"✅ Product synced to Firestore: {firestore_product_id}")
+                print(f"✅ Seller ID used: {seller_id}")
+                print(f"⏳ Product pending admin approval")
+            except Exception as firestore_error:
+                print(f"⚠️ Firestore sync failed (product still created in SQL): {firestore_error}")
+                # Don't fail the whole operation if Firestore sync fails
+            
             flash('Product submitted successfully! It will be visible to buyers once approved by admin.', 'success')
             return redirect(url_for('seller_products'))
         except Exception as e:
@@ -6780,6 +7627,48 @@ def edit_product(product_id):
         
         try:
             db.session.commit()
+            
+            # ✅ SYNC TO FIRESTORE - Update product in Firestore for mobile app
+            try:
+                from firestore_helper import update_product_firestore
+                
+                product_data = {
+                    'name': name,
+                    'brand': brand or '',
+                    'description': description or '',
+                    'categoryId': str(category.id),
+                    'category': category.name,
+                    'price': float(price),
+                    'stockQuantity': stock,
+                    'weight': float(weight) if weight else 0.0,
+                    'dimensions': dimensions or '',
+                }
+                
+                # Add image URL if updated
+                if 'image' in request.files and request.files['image'].filename:
+                    product_data['imageUrl'] = product.image_url
+                
+                # Add gallery images if updated
+                if 'gallery_images' in request.files:
+                    gallery_files = request.files.getlist('gallery_images')
+                    if gallery_files and gallery_files[0].filename:
+                        import json
+                        if product.gallery_images:
+                            product_data['galleryImages'] = json.loads(product.gallery_images)
+                
+                # Find Firestore product by SQL ID
+                from firestore_helper import get_firestore_client
+                db_firestore = get_firestore_client()
+                products = db_firestore.collection('products').where('sqlProductId', '==', str(product_id)).limit(1).stream()
+                
+                for fs_product in products:
+                    update_product_firestore(fs_product.id, product_data)
+                    print(f"✅ Product updated in Firestore: {fs_product.id}")
+                    break
+            except Exception as firestore_error:
+                print(f"⚠️ Firestore sync failed (product still updated in SQL): {firestore_error}")
+                # Don't fail the whole operation if Firestore sync fails
+            
             flash('Product updated successfully!', 'success')
             return redirect(url_for('seller_products'))
         except Exception as e:
@@ -6798,7 +7687,7 @@ def delete_product(product_id):
     product = Product.query.filter_by(id=product_id, seller_id=user.id).first_or_404()
     
     try:
-        from firestore_helper import delete_cart_items_by_product_firestore, delete_wishlist_items_by_product_firestore
+        from firestore_helper import delete_cart_items_by_product_firestore, delete_wishlist_items_by_product_firestore, get_firestore_client
         
         # Delete related records first to avoid foreign key constraints
         # Delete cart items from Firestore
@@ -6806,6 +7695,18 @@ def delete_product(product_id):
         
         # Delete wishlist items from Firestore
         delete_wishlist_items_by_product_firestore(str(product_id))
+        
+        # ✅ SYNC TO FIRESTORE - Delete product from Firestore
+        try:
+            db_firestore = get_firestore_client()
+            products = db_firestore.collection('products').where('sqlProductId', '==', str(product_id)).limit(1).stream()
+            
+            for fs_product in products:
+                fs_product.reference.delete()
+                print(f"✅ Product deleted from Firestore: {fs_product.id}")
+                break
+        except Exception as firestore_error:
+            print(f"⚠️ Firestore delete failed (product still deleted from SQL): {firestore_error}")
         
         # Delete order items (if any) - still in SQL
         OrderItem.query.filter_by(product_id=product_id).delete()
@@ -6833,16 +7734,74 @@ def seller_orders():
     user = get_current_user()
     page = request.args.get('page', 1, type=int)
     
-    # Get orders that contain products from this seller
-    orders = Order.query.join(OrderItem).filter(
-        OrderItem.seller_id == user.id
-    ).order_by(Order.created_at.desc()).paginate(
-        page=page, per_page=10, error_out=False
-    )
+    # Try to get orders from Firestore first
+    from firestore_helper import get_orders_firestore
+    # Use Firebase UID for cross-platform sync
+    user_firebase_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    all_orders = get_orders_firestore(None, 'admin')
     
-    return render_template('seller/orders.html', orders=orders)
+    # Filter orders that contain products from this seller
+    fs_seller_orders = []
+    for order in all_orders:
+        has_seller_item = False
+        order_seller_id = str(order.get('sellerId'))
+        for item in order.get('items', []):
+            item_seller_id = str(item.get('sellerId'))
+            item_sql_seller_id = str(item.get('sqlSellerId'))
+            if (item_seller_id == str(user_firebase_id) or 
+                item_seller_id == str(user.id) or
+                item_sql_seller_id == str(user.id) or
+                order_seller_id == str(user_firebase_id) or
+                order_seller_id == str(user.id)):
+                has_seller_item = True
+                break
+        if has_seller_item:
+            fs_seller_orders.append(order)
+            
+    # Normalize Firestore orders
+    normalized_fs_orders = [normalize_order_for_template(order) for order in fs_seller_orders]
+    
+    # Get SQL orders
+    sql_orders = Order.query.join(OrderItem).join(Product).filter(Product.seller_id == user.id).all()
+    
+    # Combine both
+    combined_orders = list(sql_orders) + normalized_fs_orders
+    
+    # Sort combined orders
+    def get_order_time(order):
+        dt = getattr(order, 'created_at', None) or getattr(order, 'createdAt', None)
+        if dt is None:
+            return datetime.min
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+        
+    combined_orders.sort(key=get_order_time, reverse=True)
+    
+    # Manual pagination
+    per_page = 10
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_orders = combined_orders[start_idx:end_idx]
+    
+    # Create a simple pagination object
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+    
+    orders_paginated = SimplePagination(paginated_orders, page, per_page, len(combined_orders))
+    
+    return render_template('seller/orders.html', orders=orders_paginated)
 
-@app.route('/seller/orders/<int:order_id>/status', methods=['POST'])
+@app.route('/seller/orders/<order_id>/status', methods=['POST'])
 @role_required('seller')
 def update_order_status(order_id):
     """
@@ -6868,9 +7827,28 @@ def update_order_status(order_id):
         flash(error_msg, 'error')
         return redirect(url_for('seller_orders'))
     
-    # Ensure the order exists and belongs to this seller
-    order = Order.query.get_or_404(order_id)
-    has_seller_item = OrderItem.query.filter_by(order_id=order.id, seller_id=user.id).first() is not None
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore, update_order_status_firestore
+    order = get_order_firestore(order_id)
+    
+    # If not in Firestore, fall back to SQL
+    if not order:
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.get_or_404(order_id_int)
+            has_seller_item = OrderItem.query.filter_by(order_id=order.id, seller_id=user.id).first() is not None
+            is_firestore = False
+        except ValueError:
+            error_msg = 'Order not found.'
+            if request.is_json:
+                return jsonify({'success': False, 'message': error_msg}), 404
+            flash(error_msg, 'error')
+            return redirect(url_for('seller_orders'))
+    else:
+        # Verify the order belongs to this seller
+        has_seller_item = any(item.get('sellerId') == str(user.id) for item in order.get('items', []))
+        is_firestore = True
+    
     if not has_seller_item:
         error_msg = 'You cannot update this order.'
         if request.is_json:
@@ -6879,102 +7857,167 @@ def update_order_status(order_id):
         return redirect(url_for('seller_orders'))
     
     try:
-        old_status = order.status
-        order.status = new_status
+        # Get old status based on data source
+        old_status = order.get('status') if is_firestore else order.status
         
-        # Track timestamps
-        if new_status == 'for_pickup' and not order.shipped_at:
-            order.shipped_at = utc_now()
+        # Update status
+        if is_firestore:
+            update_order_status_firestore(order_id, new_status, str(user.id))
+            # Also update SQL order if it exists
+            try:
+                sql_order = Order.query.filter_by(firestore_order_id=order_id).first()
+                if sql_order:
+                    sql_order.status = new_status
+                    if new_status == 'for_pickup' and not sql_order.shipped_at:
+                        sql_order.shipped_at = utc_now()
+                    db.session.commit()
+            except:
+                pass
+        else:
+            order.status = new_status
+            # Track timestamps
+            if new_status == 'for_pickup' and not order.shipped_at:
+                order.shipped_at = utc_now()
+            
+            # Sync status to Firestore so mobile riders can see it
+            if getattr(order, 'firestore_order_id', None):
+                try:
+                    update_order_status_firestore(order.firestore_order_id, new_status, str(user.id))
+                except Exception as e:
+                    print(f"Failed to sync status to Firestore: {e}")
+            elif new_status == 'for_pickup':
+                # Sync new SQL order to Firestore so mobile riders can see and pick it up
+                try:
+                    from firestore_helper import create_order_firestore
+                    fs_items = []
+                    for item in order.order_items:
+                        product = Product.query.get(item.product_id)
+                        fs_items.append({
+                            'productId': str(item.product_id),
+                            'productName': product.name if product else 'Unknown',
+                            'productImage': product.image_url if product else '',
+                            'price': float(item.unit_price),
+                            'quantity': item.quantity,
+                            'sellerId': str(item.seller_id),
+                            'sqlSellerId': str(item.seller_id)
+                        })
+                    
+                    buyer = User.query.get(order.buyer_id)
+                    fs_order_data = {
+                        'buyerId': str(order.buyer_id),
+                        'sellerId': str(user.firebase_uid) if getattr(user, 'firebase_uid', None) else str(user.id),
+                        'riderId': None,
+                        'name': buyer.full_name if buyer else 'Unknown',
+                        'address': order.shipping_address or 'Unknown Address',
+                        'phone': buyer.phone if buyer and buyer.phone else '00000000000',
+                        'items': fs_items,
+                        'total': float(order.total_amount),
+                        'totalAmount': float(order.total_amount),
+                        'status': new_status,
+                        'paymentStatus': order.payment_status or 'pending',
+                        'sqlOrderId': str(order.id)
+                    }
+                    fs_order_id = create_order_firestore(fs_order_data)
+                    order.firestore_order_id = fs_order_id
+                    print(f"Synced SQL order {order.id} to Firestore: {fs_order_id}")
+                except Exception as e:
+                    print(f"Failed to create order in Firestore: {e}")
+            
+            # Log the status change (SQL only)
+            log_order_status_change(
+                order_id=order.id,
+                user_id=user.id,
+                user_role='seller',
+                old_status=old_status,
+                new_status=new_status,
+                notes=notes
+            )
+            db.session.commit()
         
-        # Log the status change
-        log_order_status_change(
-            order_id=order.id,
-            user_id=user.id,
-            user_role='seller',
-            old_status=old_status,
-            new_status=new_status,
-            notes=notes
-        )
+        # Get order details for notifications
+        order_number = order.get('orderNumber') if is_firestore else order.order_number
+        buyer_id = int(order.get('buyerId')) if is_firestore else order.buyer_id
+        total_amount = order.get('totalAmount') if is_firestore else order.total_amount
         
-        # Send notifications based on status
-        if new_status == 'confirmed':
-            # Notify buyer
-            create_notification(
-                user_id=order.buyer_id,
-                notification_type='order_update',
-                category='order',
-                title='🎉 Order Confirmed!',
-                message=f'Your order #{order.order_number} has been confirmed by the seller.',
-                priority='medium',
-                action_url=url_for('buyer_orders'),
-                action_text='View Orders'
-            )
-            
-        elif new_status == 'preparing':
-            # Notify buyer
-            create_notification(
-                user_id=order.buyer_id,
-                notification_type='order_update',
-                category='order',
-                title='📦 Order Being Prepared',
-                message=f'Your order #{order.order_number} is now being prepared.',
-                priority='medium',
-                action_url=url_for('buyer_orders'),
-                action_text='View Orders'
-            )
-            
-        elif new_status == 'for_pickup':
-            # Notify buyer
-            create_notification(
-                user_id=order.buyer_id,
-                notification_type='order_update',
-                category='order',
-                title='🚚 Order Ready for Pickup',
-                message=f'Your order #{order.order_number} is ready and waiting for rider pickup.',
-                priority='medium',
-                action_url=url_for('buyer_orders'),
-                action_text='View Orders'
-            )
-            
-            # Notify all approved riders
-            approved_riders = User.query.filter_by(
-                role='rider', 
-                approval_status='approved', 
-                is_active=True
-            ).all()
-            
-            for rider in approved_riders:
+        # Send notifications based on status (SQL only for now)
+        if not is_firestore:
+            if new_status == 'confirmed':
+                # Notify buyer
                 create_notification(
-                    user_id=rider.id,
-                    notification_type='new_delivery',
-                    category='delivery',
-                    title='🆕 New Delivery Available',
-                    message=f'Order #{order.order_number} ready for pickup. Earn: ₱{float(order.total_amount) * 0.05:.2f}',
+                    user_id=buyer_id,
+                    notification_type='order_update',
+                    category='order',
+                    title='🎉 Order Confirmed!',
+                    message=f'Your order #{order_number} has been confirmed by the seller.',
                     priority='medium',
-                    action_url=url_for('rider_orders'),
-                    action_text='View Order'
+                    action_url=url_for('buyer_orders'),
+                    action_text='View Orders'
                 )
                 
-        elif new_status == 'cancelled':
-            # Notify buyer
-            create_notification(
-                user_id=order.buyer_id,
-                notification_type='order_update',
-                category='order',
-                title='❌ Order Cancelled',
-                message=f'Your order #{order.order_number} has been cancelled by the seller.',
-                priority='high',
-                action_url=url_for('buyer_orders'),
-                action_text='View Orders'
-            )
+            elif new_status == 'preparing':
+                # Notify buyer
+                create_notification(
+                    user_id=buyer_id,
+                    notification_type='order_update',
+                    category='order',
+                    title='📦 Order Being Prepared',
+                    message=f'Your order #{order_number} is now being prepared.',
+                    priority='medium',
+                    action_url=url_for('buyer_orders'),
+                    action_text='View Orders'
+                )
+                
+            elif new_status == 'for_pickup':
+                # Notify buyer
+                create_notification(
+                    user_id=buyer_id,
+                    notification_type='order_update',
+                    category='order',
+                    title='🚚 Order Ready for Pickup',
+                    message=f'Your order #{order_number} is ready and waiting for rider pickup.',
+                    priority='medium',
+                    action_url=url_for('buyer_orders'),
+                    action_text='View Orders'
+                )
+                
+                # Notify all approved riders
+                approved_riders = User.query.filter_by(
+                    role='rider', 
+                    approval_status='approved', 
+                    is_active=True
+                ).all()
+                
+                for rider in approved_riders:
+                    create_notification(
+                        user_id=rider.id,
+                        notification_type='order_update',
+                        category='delivery',
+                        title='🆕 New Delivery Available',
+                        message=f'Order #{order_number} ready for pickup. Earn: ₱{float(total_amount) * 0.05:.2f}',
+                        priority='medium',
+                        action_url=url_for('rider_orders'),
+                        action_text='View Order'
+                    )
+                    
+            elif new_status == 'cancelled':
+                # Notify buyer
+                create_notification(
+                    user_id=buyer_id,
+                    notification_type='order_update',
+                    category='order',
+                    title='❌ Order Cancelled',
+                    message=f'Your order #{order_number} has been cancelled by the seller.',
+                    priority='high',
+                    action_url=url_for('buyer_orders'),
+                    action_text='View Orders'
+                )
         
-        db.session.commit()
-        
-        # Send automatic message to buyer about status update
-        status_messages_chat = {
-            'confirmed': f"Hello! Your order #{order.order_number} has been confirmed. We'll start preparing your items shortly. Thank you for your purchase!",
-            'preparing': f"Good news! We're now preparing your order #{order.order_number}. Your items will be ready for pickup soon!",
-            'for_pickup': f"Your order #{order.order_number} is now ready for pickup! Our delivery rider will collect it soon and bring it to you.",
+        # Send automatic message to buyer about status update (SQL only for now)
+        if not is_firestore:
+            status_messages_chat = {
+                'confirmed': f"Hello! Your order #{order_number} has been confirmed. We'll start preparing your items shortly. Thank you for your purchase!",
+                'preparing': f"Good news! We're now preparing your order #{order_number}. Your items will be ready for pickup soon!",
+                'for_pickup': f"Your order #{order_number} is now ready for pickup! Our delivery rider will collect it soon and bring it to you.",
             'cancelled': f"We regret to inform you that your order #{order.order_number} has been cancelled. {notes if notes else 'Please contact us if you have any questions or concerns.'}"
         }
         
@@ -9605,34 +10648,79 @@ def rider_orders():
     status_filter = request.args.get('status', 'all')
     page = request.args.get('page', 1, type=int)
     
-    query = Order.query.filter_by(rider_id=rider.id)
+    # Try to get orders from Firestore first
+    from firestore_helper import get_orders_firestore
+    # Use Firebase UID for cross-platform sync
+    rider_id = rider.firebase_uid if rider.firebase_uid else str(rider.id)
+    all_orders = get_orders_firestore(rider_id, 'rider')
     
+    # Apply status filter if provided
     if status_filter != 'all':
-        query = query.filter_by(status=status_filter)
+        all_orders = [o for o in all_orders if o.get('status') == status_filter]
     
-    orders = query.order_by(Order.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
+    # Manual pagination
+    per_page = 20
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_orders = all_orders[start_idx:end_idx]
+    
+    # Normalize orders for template compatibility
+    normalized_orders = [normalize_order_for_template(order) for order in paginated_orders]
+    
+    # Create a simple pagination object
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+    
+    orders_paginated = SimplePagination(normalized_orders, page, per_page, len(all_orders))
     
     return render_template('rider/orders.html',
-                         orders=orders,
+                         orders=orders_paginated,
                          status_filter=status_filter)
 
-@app.route('/rider/orders/<int:order_id>')
+@app.route('/rider/orders/<order_id>')
 @role_required('rider')
 def rider_order_detail(order_id):
     """View detailed order information"""
     rider = get_current_user()
-    order = Order.query.get_or_404(order_id)
+    
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore
+    order = get_order_firestore(order_id)
+    
+    # If not in Firestore, fall back to SQL
+    if not order:
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.get_or_404(order_id_int)
+            is_firestore = False
+        except ValueError:
+            return render_template('errors/404.html'), 404
+    else:
+        is_firestore = True
     
     # Verify rider has access to this order
-    if order.rider_id != rider.id and order.status != 'for_pickup':
+    rider_id = order.get('riderId') if is_firestore else order.rider_id
+    order_status = order.get('status') if is_firestore else order.status
+    
+    if str(rider_id) != str(rider.id) and order_status != 'for_pickup':
         flash('Access denied.', 'error')
         return redirect(url_for('rider_orders'))
     
-    return render_template('rider/order_detail.html', order=order)
+    # Normalize order for template compatibility
+    normalized_order = normalize_order_for_template(order)
+    
+    return render_template('rider/order_detail.html', order=normalized_order)
 
-@app.route('/rider/orders/<int:order_id>/accept', methods=['POST'])
+@app.route('/rider/orders/<order_id>/accept', methods=['POST'])
 @role_required('rider')
 def rider_accept_order(order_id):
     """Accept an order for delivery"""
@@ -9641,63 +10729,106 @@ def rider_accept_order(order_id):
     if rider.approval_status != 'approved':
         return jsonify({'success': False, 'message': 'Account not verified'})
     
-    order = Order.query.get_or_404(order_id)
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore, update_order_status_firestore
+    order = get_order_firestore(order_id)
     
-    if order.status != 'for_pickup' or order.rider_id is not None:
+    # If not in Firestore, fall back to SQL
+    if not order:
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.get_or_404(order_id_int)
+            is_firestore = False
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Order not found'}), 404
+    else:
+        is_firestore = True
+    
+    # Check order status based on data source
+    order_status = order.get('status') if is_firestore else order.status
+    order_rider_id = order.get('riderId') if is_firestore else order.rider_id
+    
+    if order_status != 'for_pickup' or order_rider_id is not None:
         return jsonify({'success': False, 'message': 'Order not available'})
     
     try:
-        order.rider_id = rider.id
-        order.status = 'picked_up'
-        db.session.commit()
+        # Update order with rider assignment
+        if is_firestore:
+            # Update Firestore order
+            from firestore_helper import update_order_status_firestore
+            update_order_status_firestore(order_id, 'picked_up', str(rider.id))
+            # Also update riderId in Firestore
+            fs_db = firestore.client()
+            fs_db.collection('orders').document(order_id).update({
+                'riderId': str(rider.id),
+                'riderName': f"{rider.first_name} {rider.last_name}"
+            })
+            # Also update SQL order if it exists
+            try:
+                sql_order = Order.query.filter_by(firestore_order_id=order_id).first()
+                if sql_order:
+                    sql_order.rider_id = rider.id
+                    sql_order.status = 'picked_up'
+                    db.session.commit()
+            except:
+                pass
+        else:
+            order.rider_id = rider.id
+            order.status = 'picked_up'
+            db.session.commit()
         
-        # Notify buyer
-        create_notification(
-            user_id=order.buyer_id,
-            notification_type='order_update',
-            category='order',
-            title='Order Picked Up',
-            message=f'Your order #{order.order_number} has been picked up by rider {rider.first_name} {rider.last_name}.',
-            priority='medium',
-            action_url=url_for('buyer_orders'),
-            action_text='View Orders'
-        )
+        # Get order details for notifications
+        order_number = order.get('orderNumber') if is_firestore else order.order_number
+        buyer_id = int(order.get('buyerId')) if is_firestore else order.buyer_id
         
-        # Send automatic chat message to buyer
-        buyer_message = f"Hello! I'm {rider.first_name} {rider.last_name}, your delivery rider. I've picked up your order #{order.order_number} and I'm on my way to deliver it to you. Thank you!"
-        send_automatic_message(
-            sender_id=rider.id,
-            receiver_id=order.buyer_id,
-            message_content=buyer_message,
-            order_id=order.id
-        )
-        
-        # Get all sellers from order items and send messages to each unique seller
-        seller_ids = set()
-        for item in order.order_items:
-            seller_ids.add(item.product.seller_id)
-        
-        for seller_id in seller_ids:
-            # Notify seller
+        # Notify buyer (SQL only for now)
+        if not is_firestore:
             create_notification(
-                user_id=seller_id,
+                user_id=buyer_id,
                 notification_type='order_update',
                 category='order',
                 title='Order Picked Up',
-                message=f'Order #{order.order_number} has been picked up by rider {rider.first_name} {rider.last_name}.',
+                message=f'Your order #{order_number} has been picked up by rider {rider.first_name} {rider.last_name}.',
                 priority='medium',
-                action_url=url_for('seller_orders'),
+                action_url=url_for('buyer_orders'),
                 action_text='View Orders'
             )
             
-            # Send automatic chat message to seller
-            seller_message = f"Hello! I'm {rider.first_name} {rider.last_name}, the delivery rider. I've picked up order #{order.order_number} containing your products and will deliver it to the customer. Thank you!"
+            # Send automatic chat message to buyer
+            buyer_message = f"Hello! I'm {rider.first_name} {rider.last_name}, your delivery rider. I've picked up your order #{order_number} and I'm on my way to deliver it to you. Thank you!"
             send_automatic_message(
                 sender_id=rider.id,
-                receiver_id=seller_id,
-                message_content=seller_message,
+                receiver_id=buyer_id,
+                message_content=buyer_message,
                 order_id=order.id
             )
+            
+            # Get all sellers from order items and send messages to each unique seller
+            seller_ids = set()
+            for item in order.order_items:
+                seller_ids.add(item.product.seller_id)
+            
+            for seller_id in seller_ids:
+                # Notify seller
+                create_notification(
+                    user_id=seller_id,
+                    notification_type='order_update',
+                    category='order',
+                    title='Order Picked Up',
+                    message=f'Order #{order_number} has been picked up by rider {rider.first_name} {rider.last_name}.',
+                    priority='medium',
+                    action_url=url_for('seller_orders'),
+                    action_text='View Orders'
+                )
+                
+                # Send automatic chat message to seller
+                seller_message = f"Hello! I'm {rider.first_name} {rider.last_name}, the delivery rider. I've picked up order #{order_number} containing your products and will deliver it to the customer. Thank you!"
+                send_automatic_message(
+                    sender_id=rider.id,
+                    receiver_id=seller_id,
+                    message_content=seller_message,
+                    order_id=order.id
+                )
         
         flash('Order accepted successfully!', 'success')
         return jsonify({'success': True})
@@ -9706,14 +10837,30 @@ def rider_accept_order(order_id):
         print(f"Error accepting order: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/rider/orders/<int:order_id>/update-status', methods=['POST'])
+@app.route('/rider/orders/<order_id>/update-status', methods=['POST'])
 @role_required('rider')
 def rider_update_order_status(order_id):
     """Update delivery status"""
     rider = get_current_user()
-    order = Order.query.get_or_404(order_id)
     
-    if order.rider_id != rider.id:
+    # Try to get order from Firestore first
+    from firestore_helper import get_order_firestore, update_order_status_firestore
+    order = get_order_firestore(order_id)
+    
+    # If not in Firestore, fall back to SQL
+    if not order:
+        try:
+            order_id_int = int(order_id)
+            order = Order.query.get_or_404(order_id_int)
+            is_firestore = False
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Order not found'}), 404
+    else:
+        is_firestore = True
+    
+    # Verify rider has access to this order
+    rider_id = order.get('riderId') if is_firestore else order.rider_id
+    if str(rider_id) != str(rider.id):
         return jsonify({'success': False, 'message': 'Access denied'})
     
     new_status = request.json.get('status')
@@ -9724,47 +10871,69 @@ def rider_update_order_status(order_id):
         return jsonify({'success': False, 'message': 'Invalid status'})
     
     try:
-        order.status = new_status
-        order.last_status_update = utc_now()
+        # Update order status
+        if is_firestore:
+            update_order_status_firestore(order_id, new_status, str(rider.id))
+            # Also update SQL order if it exists
+            try:
+                sql_order = Order.query.filter_by(firestore_order_id=order_id).first()
+                if sql_order:
+                    sql_order.status = new_status
+                    sql_order.last_status_update = utc_now()
+                    if new_status == 'delivered' and not sql_order.delivered_at:
+                        sql_order.delivered_at = utc_now()
+                    if notes:
+                        sql_order.notes = (sql_order.notes or '') + f"\n[Rider] {notes}"
+                    db.session.commit()
+            except:
+                pass
+        else:
+            order.status = new_status
+            order.last_status_update = utc_now()
+            
+            # Set delivered_at timestamp when marking as delivered
+            if new_status == 'delivered' and not order.delivered_at:
+                order.delivered_at = utc_now()
+            
+            if notes:
+                order.notes = (order.notes or '') + f"\n[Rider] {notes}"
+            
+            db.session.commit()
         
-        # Set delivered_at timestamp when marking as delivered
-        if new_status == 'delivered' and not order.delivered_at:
-            order.delivered_at = utc_now()
+        # Get order details for notifications
+        order_number = order.get('orderNumber') if is_firestore else order.order_number
+        buyer_id = int(order.get('buyerId')) if is_firestore else order.buyer_id
         
-        if notes:
-            order.notes = (order.notes or '') + f"\n[Rider] {notes}"
-        
-        db.session.commit()
-        
-        # Create notifications
-        notification_messages = {
-            'on_delivery': 'Your order is now on the way!',
-            'delivered': 'Your order has been delivered!'
-        }
-        
-        create_notification(
-            user_id=order.buyer_id,
-            notification_type='order_update',
-            category='order',
-            title=f'Order {new_status.replace("_", " ").title()}',
-            message=notification_messages.get(new_status, 'Order status updated'),
-            priority='high' if new_status == 'delivered' else 'medium',
-            action_url=url_for('buyer_orders'),
-            action_text='View Order'
-        )
-        
-        # Send automatic message from seller to buyer about delivery status
-        # Get the seller from the first order item
-        first_item = order.order_items.first()
-        if first_item:
-            seller_id = first_item.seller_id
-            rider_messages = {
-                'on_delivery': f"Good news! Your order #{order.order_number} is now on the way to you. Our rider is en route to your delivery address.",
-                'delivered': f"Your order #{order.order_number} has been delivered! We hope you enjoy your purchase. Thank you for shopping with us!"
+        # Create notifications (SQL only for now)
+        if not is_firestore:
+            notification_messages = {
+                'on_delivery': 'Your order is now on the way!',
+                'delivered': 'Your order has been delivered!'
             }
             
-            if new_status in rider_messages:
-                send_automatic_message(seller_id, order.buyer_id, rider_messages[new_status], order.id)
+            create_notification(
+                user_id=buyer_id,
+                notification_type='order_update',
+                category='order',
+                title=f'Order {new_status.replace("_", " ").title()}',
+                message=notification_messages.get(new_status, 'Order status updated'),
+                priority='high' if new_status == 'delivered' else 'medium',
+                action_url=url_for('buyer_orders'),
+                action_text='View Order'
+            )
+            
+            # Send automatic message from seller to buyer about delivery status
+            # Get the seller from the first order item
+            first_item = order.order_items.first()
+            if first_item:
+                seller_id = first_item.seller_id
+                rider_messages = {
+                    'on_delivery': f"Good news! Your order #{order_number} is now on the way to you. Our rider is en route to your delivery address.",
+                    'delivered': f"Your order #{order_number} has been delivered! We hope you enjoy your purchase. Thank you for shopping with us!"
+                }
+                
+                if new_status in rider_messages:
+                    send_automatic_message(seller_id, buyer_id, rider_messages[new_status], order.id)
         
         return jsonify({'success': True, 'message': 'Status updated successfully'})
     except Exception as e:
@@ -10475,9 +11644,12 @@ def api_add_to_cart():
         multiplier = _compute_weight_multiplier(selected_weight)
         computed_unit_price = float(product.price) * multiplier
         
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        
         # Add to Firestore
         result = add_to_cart_firestore(
-            user_id=str(user.id),
+            user_id=user_id,
             product_id=str(product_id),
             quantity=quantity,
             product_name=product.name,
@@ -10485,7 +11657,7 @@ def api_add_to_cart():
             price=computed_unit_price,
             variant=variant,
             selected_weight=selected_weight,
-            seller_id=str(product.seller_id) if product.seller_id else None,
+            seller_id=_get_seller_firebase_uid(product.seller_id) if product.seller_id else None,
             max_stock=product.stock_quantity
         )
         
@@ -10508,7 +11680,9 @@ def api_remove_from_cart():
         item_id = data.get('item_id')  # Firestore document ID
         
         user = get_current_user()
-        result = remove_from_cart_firestore(str(user.id), item_id)
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        result = remove_from_cart_firestore(user_id, item_id)
         
         return jsonify(result)
         
@@ -10545,7 +11719,9 @@ def api_update_cart():
         quantity = data.get('quantity', 1)
         
         user = get_current_user()
-        result = update_cart_quantity_firestore(str(user.id), item_id, quantity)
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        result = update_cart_quantity_firestore(user_id, item_id, quantity)
         
         return jsonify(result)
         
@@ -10644,9 +11820,12 @@ def api_add_to_wishlist():
         if not product:
             return jsonify({'success': False, 'message': 'Product not found'})
         
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        
         # Add to Firestore wishlist
         result = add_to_wishlist_firestore(
-            user_id=str(user.id),
+            user_id=user_id,
             product_id=str(product_id),
             product_name=product.name,
             product_image=product.image_url or '',
@@ -10672,7 +11851,10 @@ def api_remove_from_wishlist():
         if not product_id:
             return jsonify({'success': False, 'message': 'Product ID is required'})
         
-        result = remove_from_wishlist_firestore(str(user.id), str(product_id))
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        
+        result = remove_from_wishlist_firestore(user_id, str(product_id))
         return jsonify(result)
         
     except Exception as e:
@@ -10692,12 +11874,15 @@ def api_toggle_wishlist():
         if not product_id:
             return jsonify({'success': False, 'message': 'Product ID is required'})
         
+        # Use Firebase UID for cross-platform sync
+        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        
         # Check if already in wishlist
-        in_wishlist = is_in_wishlist_firestore(str(user.id), str(product_id))
+        in_wishlist = is_in_wishlist_firestore(user_id, str(product_id))
         
         if in_wishlist:
             # Remove from wishlist
-            result = remove_from_wishlist_firestore(str(user.id), str(product_id))
+            result = remove_from_wishlist_firestore(user_id, str(product_id))
             return jsonify({'success': True, 'message': 'Removed from wishlist', 'in_wishlist': False})
         else:
             # Add to wishlist
@@ -10706,7 +11891,7 @@ def api_toggle_wishlist():
                 return jsonify({'success': False, 'message': 'Product not found'})
             
             result = add_to_wishlist_firestore(
-                user_id=str(user.id),
+                user_id=user_id,
                 product_id=str(product_id),
                 product_name=product.name,
                 product_image=product.image_url or '',
@@ -10979,7 +12164,7 @@ def api_set_default_address(address_id):
 # REORDER FUNCTIONALITY
 # =====================================================
 
-@app.route('/api/reorder/<int:order_id>', methods=['POST'])
+@app.route('/api/reorder/<order_id>', methods=['POST'])
 @login_required
 def api_reorder(order_id):
     """Reorder items from a previous order"""
@@ -11860,7 +13045,7 @@ def api_send_message():
         # Note: Users should use the floating chat widget to view messages
         create_notification(
             user_id=receiver.id,
-            notification_type='new_message',
+            notification_type='system_alert',
             category='chat',
             title=f'New message from {user.username}',
             message=message_content[:100],
@@ -12224,7 +13409,7 @@ def handle_send_message(data):
         # Create notification
         create_notification(
             user_id=receiver.id,
-            notification_type='new_message',
+            notification_type='system_alert',
             category='chat',
             title=f'New message from {user.username}',
             message=message_content[:100],
@@ -12287,10 +13472,15 @@ def admin_orders():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status', 'all')
     search = request.args.get('search', '')
+    per_page = 20
     
+    # Get orders from both SQL and Firestore
+    from firestore_helper import get_orders_firestore
+    
+    # Get SQL orders
     query = Order.query
     
-    # Apply filters
+    # Apply filters for SQL
     if status_filter != 'all':
         query = query.filter_by(status=status_filter)
     
@@ -12303,15 +13493,63 @@ def admin_orders():
             )
         )
     
-    orders = query.order_by(Order.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
+    sql_orders = query.order_by(Order.created_at.desc()).all()
     
-    # Get statistics
-    total_orders = Order.query.count()
-    pending_orders = Order.query.filter_by(status='pending').count()
-    on_delivery = Order.query.filter_by(status='on_delivery').count()
-    completed_orders = Order.query.filter_by(status='completed').count()
+    # Get Firestore orders
+    firestore_orders = get_orders_firestore(None, 'admin')  # Get all orders
+    
+    # Filter Firestore orders
+    if status_filter != 'all':
+        firestore_orders = [o for o in firestore_orders if o.get('status') == status_filter]
+    
+    if search:
+        search_lower = search.lower()
+        firestore_orders = [o for o in firestore_orders 
+                          if search_lower in o.get('orderNumber', '').lower() 
+                          or search_lower in o.get('buyerInfo', {}).get('email', '').lower()
+                          or search_lower in o.get('buyerInfo', {}).get('name', '').lower()]
+    
+    # Normalize Firestore orders for template
+    normalized_firestore_orders = [normalize_order_for_template(o) for o in firestore_orders]
+    
+    # Combine and sort all orders
+    all_orders = list(sql_orders) + normalized_firestore_orders
+    
+    def get_order_time(order):
+        dt = getattr(order, 'created_at', None) or getattr(order, 'createdAt', None)
+        if dt is None:
+            return datetime.min
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+        
+    all_orders.sort(key=get_order_time, reverse=True)
+    
+    # Manual pagination
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_orders = all_orders[start_idx:end_idx]
+    
+    # Create pagination object
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+    
+    orders = SimplePagination(paginated_orders, page, per_page, len(all_orders))
+    
+    # Get statistics (combine SQL and Firestore)
+    total_orders = len(all_orders)
+    pending_orders = len([o for o in all_orders if (hasattr(o, 'status') and o.status == 'pending') or (hasattr(o, 'status_value') and o.status_value == 'pending')])
+    on_delivery = len([o for o in all_orders if (hasattr(o, 'status') and o.status == 'on_delivery') or (hasattr(o, 'status_value') and o.status_value == 'on_delivery')])
+    completed_orders = len([o for o in all_orders if (hasattr(o, 'status') and o.status == 'completed') or (hasattr(o, 'status_value') and o.status_value == 'completed')])
     
     # Get available riders
     available_riders = User.query.filter_by(role='rider', is_active=True, approval_status='approved').all()
@@ -12326,11 +13564,25 @@ def admin_orders():
                          current_status=status_filter,
                          search=search)
 
-@app.route('/admin/orders/<int:order_id>')
+@app.route('/admin/orders/<order_id>')
 @role_required('admin')
 def admin_order_detail(order_id):
     """View detailed order information"""
-    order = Order.query.get_or_404(order_id)
+    # Check if order exists in SQL
+    try:
+        sql_order_id = int(order_id)
+        order = Order.query.get(sql_order_id)
+    except ValueError:
+        order = None
+    
+    if not order:
+        from firestore_helper import get_order_firestore
+        order = get_order_firestore(str(order_id))
+        if not order:
+            abort(404)
+        # Normalize Firestore order
+        order = normalize_order_for_template(order)
+    
     rider_assignment = RiderAssignment.query.filter_by(order_id=order_id).first()
     available_riders = User.query.filter_by(role='rider', is_active=True, approval_status='approved').all()
     
@@ -12339,7 +13591,7 @@ def admin_order_detail(order_id):
                          rider_assignment=rider_assignment,
                          available_riders=available_riders)
 
-@app.route('/admin/orders/<int:order_id>/assign-rider', methods=['POST'])
+@app.route('/admin/orders/<order_id>/assign-rider', methods=['POST'])
 @role_required('admin')
 def admin_assign_rider(order_id):
     """Assign a rider to an order"""
@@ -12411,7 +13663,7 @@ def admin_assign_rider(order_id):
     
     return redirect(url_for('admin_order_detail', order_id=order_id))
 
-@app.route('/admin/orders/<int:order_id>/update-status', methods=['POST'])
+@app.route('/admin/orders/<order_id>/update-status', methods=['POST'])
 @role_required('admin')
 def admin_update_order_status(order_id):
     """Update order status - Admin can only handle special cases (cancelled, refunded, completed)"""
@@ -12960,13 +14212,20 @@ def api_user_preferences():
 # ORDER CANCELLATION API
 # =====================================================
 
-@app.route('/api/orders/<int:order_id>/cancel', methods=['POST'])
+@app.route('/api/orders/<order_id>/cancel', methods=['POST'])
 @login_required
 def cancel_order(order_id):
     """Cancel an order (only for pending/confirmed status)"""
     try:
         user = get_current_user()
-        order = Order.query.get_or_404(order_id)
+        
+        # Try SQL first
+        try:
+            sql_order_id = int(order_id)
+            order = Order.query.get_or_404(sql_order_id)
+        except ValueError:
+            from flask import abort
+            abort(404)
         
         # Get cancellation reason from request
         data = request.get_json() or {}
@@ -13007,7 +14266,7 @@ def cancel_order(order_id):
                 # Create notification for seller
                 notification = Notification(
                     user_id=seller_id,
-                    notification_type='order',
+                    notification_type='order_update',
                     title='Order Cancelled',
                     message=notif_message,
                     action_url=url_for('seller_order_detail', order_id=order.id),

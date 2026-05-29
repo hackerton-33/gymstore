@@ -223,7 +223,10 @@ def get_orders_firestore(user_id: str, role: str = 'buyer') -> List[Dict]:
     db = get_firestore_client()
     orders_ref = db.collection('orders')
     
-    if role == 'buyer':
+    if role == 'admin':
+        # Admin gets all orders
+        query = orders_ref
+    elif role == 'buyer':
         query = orders_ref.where('buyerId', '==', user_id)
     elif role == 'seller':
         query = orders_ref.where('sellerId', '==', user_id)
@@ -267,56 +270,67 @@ def update_order_status_firestore(order_id: str, status: str, updated_by: str) -
 
 def get_products_firestore(filters: Optional[Dict] = None, sort_by: str = 'name', 
                           limit: Optional[int] = None, offset: int = 0) -> List[Dict]:
-    """Get products with optional filters, sorting, and pagination"""
+    """Get products with optional filters, sorting, and pagination
+    
+    NOTE: This version fetches all products and filters/sorts in Python
+    to avoid Firestore composite index requirements.
+    """
     db = get_firestore_client()
+    
+    # Start with basic query - only use ONE where clause to avoid index requirement
     query = db.collection('products')
     
-    # Apply filters
-    if filters:
-        if 'isActive' in filters:
-            query = query.where('isActive', '==', filters['isActive'])
-        if 'approvalStatus' in filters:
-            query = query.where('approvalStatus', '==', filters['approvalStatus'])
-        if 'category' in filters:
-            query = query.where('category', '==', filters['category'])
-        if 'categoryId' in filters:
-            query = query.where('categoryId', '==', filters['categoryId'])
-        if 'sellerId' in filters:
-            query = query.where('sellerId', '==', filters['sellerId'])
-        if 'maxPrice' in filters:
-            query = query.where('price', '<=', filters['maxPrice'])
-        if 'inStockOnly' in filters and filters['inStockOnly']:
-            query = query.where('stockQuantity', '>', 0)
+    # Apply only isActive filter in Firestore (single field index exists by default)
+    if filters and filters.get('isActive') is not None:
+        query = query.where('isActive', '==', filters['isActive'])
     
-    # Apply sorting
-    if sort_by == 'latest':
-        query = query.order_by('createdAt', direction=firestore.Query.DESCENDING)
-    elif sort_by == 'price_low':
-        query = query.order_by('price', direction=firestore.Query.ASCENDING)
-    elif sort_by == 'price_high':
-        query = query.order_by('price', direction=firestore.Query.DESCENDING)
-    elif sort_by == 'top_sales':
-        query = query.order_by('totalSold', direction=firestore.Query.DESCENDING)
-    elif sort_by == 'name':
-        query = query.order_by('name', direction=firestore.Query.ASCENDING)
-    
-    # Apply pagination
-    if offset > 0:
-        # Get all results up to offset + limit
-        all_results = list(query.stream())
-        products = all_results[offset:offset + limit] if limit else all_results[offset:]
-    else:
-        if limit:
-            query = query.limit(limit)
-        products = query.stream()
-    
-    product_list = []
-    for product in products:
+    # Get all products
+    all_products = []
+    for product in query.stream():
         data = product.to_dict()
         data['id'] = product.id
-        product_list.append(data)
+        all_products.append(data)
     
-    return product_list
+    # Apply remaining filters in Python
+    filtered_products = all_products
+    
+    if filters:
+        if 'approvalStatus' in filters:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('approvalStatus') == filters['approvalStatus']]
+        if 'category' in filters:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('category') == filters['category']]
+        if 'categoryId' in filters:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('categoryId') == filters['categoryId']]
+        if 'sellerId' in filters:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('sellerId') == filters['sellerId']]
+        if 'maxPrice' in filters:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('price', 0) <= filters['maxPrice']]
+        if 'inStockOnly' in filters and filters['inStockOnly']:
+            filtered_products = [p for p in filtered_products 
+                               if p.get('stockQuantity', 0) > 0]
+    
+    # Apply sorting in Python
+    if sort_by == 'latest':
+        filtered_products.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
+    elif sort_by == 'price_low':
+        filtered_products.sort(key=lambda x: float(x.get('price', 0)))
+    elif sort_by == 'price_high':
+        filtered_products.sort(key=lambda x: float(x.get('price', 0)), reverse=True)
+    elif sort_by == 'top_sales':
+        filtered_products.sort(key=lambda x: x.get('totalSold', 0), reverse=True)
+    elif sort_by == 'name':
+        filtered_products.sort(key=lambda x: x.get('name', '').lower())
+    
+    # Apply pagination in Python
+    start_idx = offset
+    end_idx = offset + limit if limit else len(filtered_products)
+    
+    return filtered_products[start_idx:end_idx]
 
 def get_product_firestore(product_id: str) -> Optional[Dict]:
     """Get single product by ID"""

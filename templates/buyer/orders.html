@@ -38,7 +38,7 @@
                         {{ order.status.replace('_', ' ').title() }}
                     </span>
                     <span class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' if order.payment_status == 'pending' else 'danger' }}">
-                        {{ order.payment_status.title() }}
+                        {{ (order.payment_status or 'pending').title() }}
                     </span>
                 </div>
             </div>
@@ -56,11 +56,15 @@
                     {% endif %}
                 </div>
                 <div class="col-6 col-md-7">
-                    <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="text-decoration-none text-dark">
-                        <strong>{{ item.product.name }}</strong>
+                    {% if item.product.is_web_product %}
+                    <a href="{{ url_for('product_detail', product_id=item.product.web_id) }}" class="text-decoration-none text-dark">
+                        <strong class="clickable-product-name">{{ item.product.name }}</strong>
                     </a>
+                    {% else %}
+                    <strong>{{ item.product.name }}</strong>
+                    {% endif %}
                     <div class="text-muted small mt-1">
-                        Qty: {{ item.quantity }} × ₱{{ "%.2f"|format(item.unit_price) }}
+                        Qty: {{ item.quantity }} × ₱{{ "%.2f"|format(item.unit_price or 0) }}
                     </div>
                     {% set is_reviewed = (item.product_id, order.id) in reviewed_pairs %}
                     {% if order.status in ['delivered','confirmed','completed'] %}
@@ -74,7 +78,7 @@
                     {% endif %}
                 </div>
                 <div class="col-4 col-md-4 text-end">
-                    <strong class="text-primary">₱{{ "%.2f"|format(item.total_price) }}</strong>
+                    <strong class="text-primary">₱{{ "%.2f"|format(item.total_price or 0) }}</strong>
                 </div>
             </div>
             {% endfor %}
@@ -82,7 +86,7 @@
         <div class="card-footer bg-light">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <strong>Order Total: <span class="text-primary">₱{{ "%.2f"|format(order.total_amount) }}</span></strong>
+                    <strong>Order Total: <span class="text-primary">₱{{ "%.2f"|format(order.total_amount or 0) }}</span></strong>
                 </div>
                 <div class="col-md-6 text-md-end mt-2 mt-md-0">
                     {% if order.status == 'delivered' %}

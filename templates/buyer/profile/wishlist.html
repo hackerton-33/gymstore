@@ -88,7 +88,9 @@
                                             </div>
                                         </div>
                                         <div class="col-md-2">
-                                            <a href="{{ url_for('product_detail', product_id=item.product.id) }}" class="text-decoration-none">
+                                            {% if item.product.is_web_product %}
+                                            <a href="{{ url_for('product_detail', product_id=item.product.web_id) }}" class="text-decoration-none">
+                                            {% endif %}
                                                 {% if item.product.image_url %}
                                                     <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded wishlist-image">
                                                 {% else %}
@@ -96,64 +98,82 @@
                                                         <i class="fas fa-dumbbell fa-2x text-muted"></i>
                                                     </div>
                                                 {% endif %}
+                                            {% if item.product.is_web_product %}
                                             </a>
+                                            {% endif %}
                                         </div>
                                         <div class="col-md-5">
                                             <div class="product-info">
                                                 <h6 class="mb-1">
-                                                    <a href="{{ url_for('product_detail', product_id=item.product.id) }}" class="text-decoration-none text-dark">
+                                                    {% if item.product.is_web_product %}
+                                                    <a href="{{ url_for('product_detail', product_id=item.product.web_id) }}" class="text-decoration-none text-dark">
                                                         {{ item.product.name }}
                                                     </a>
+                                                    {% else %}
+                                                    {{ item.product.name }}
+                                                    {% endif %}
                                                 </h6>
-                                                <p class="text-muted mb-1">{{ item.product.category.name }}</p>
-                                                <p class="text-muted mb-1">{{ item.product.brand or 'No Brand' }}</p>
+                                                <p class="text-muted mb-1">{{ item.product.category.name if item.product.category else 'Uncategorized' }}</p>
+                                                <p class="text-muted mb-1">{{ item.product.brand if item.product.brand else 'No Brand' }}</p>
+                                                {% if item.product.is_web_product %}
                                                 <div class="rating">
                                                     {% for i in range(1, 6) %}
-                                                        {% if i <= item.product.average_rating %}
+                                                        {% if i <= (item.product.average_rating if item.product.average_rating else 0) %}
                                                             <i class="fas fa-star text-warning"></i>
                                                         {% else %}
                                                             <i class="far fa-star text-muted"></i>
                                                         {% endif %}
                                                     {% endfor %}
-                                                    <small class="text-muted ms-1">({{ item.product.review_count }})</small>
+                                                    <small class="text-muted ms-1">({{ item.product.review_count if item.product.review_count else 0 }})</small>
                                                 </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         <div class="col-md-2">
                                             <div class="price-info">
-                                                {% if item.product.compare_price and item.product.compare_price > item.product.price %}
+                                                {% if item.product.is_web_product and item.product.compare_price and item.product.compare_price > item.product.price %}
                                                     <div class="current-price h6 text-success mb-1">₱{{ "%.2f"|format(item.product.price) }}</div>
                                                     <div class="original-price text-muted text-decoration-line-through small">₱{{ "%.2f"|format(item.product.compare_price) }}</div>
                                                     <div class="discount-badge badge bg-danger small">
                                                         {{ "%.0f"|format(((item.product.compare_price - item.product.price) / item.product.compare_price) * 100) }}% OFF
                                                     </div>
+                                                    {% if item.product.stock_quantity %}
                                                     <div class="product-quantity text-muted small mt-1">
                                                         <i class="fas fa-box me-1"></i>{{ item.product.stock_quantity }} available
                                                     </div>
+                                                    {% endif %}
                                                 {% else %}
                                                     <div class="current-price h6 text-primary">₱{{ "%.2f"|format(item.product.price) }}</div>
+                                                    {% if item.product.is_web_product and item.product.stock_quantity %}
                                                     <div class="product-quantity text-muted small mt-1">
                                                         <i class="fas fa-box me-1"></i>{{ item.product.stock_quantity }} available
                                                     </div>
+                                                    {% endif %}
                                                 {% endif %}
                                             </div>
+                                            {% if item.product.is_web_product %}
                                             <div class="stock-status mt-2">
-                                                {% if item.product.stock_quantity > 0 %}
+                                                {% if item.product.stock_quantity and item.product.stock_quantity > 0 %}
                                                     <span class="badge bg-success">In Stock</span>
                                                 {% else %}
                                                     <span class="badge bg-danger">Out of Stock</span>
                                                 {% endif %}
                                             </div>
+                                            {% endif %}
                                         </div>
                                         <div class="col-md-2">
                                             <div class="item-actions">
-                                                {% if item.product.stock_quantity > 0 %}
-                                                    <button class="btn btn-primary btn-sm w-100 mb-2 add-to-cart-btn" data-product-id="{{ item.product.id }}">
+                                                {% if item.product.is_web_product and item.product.stock_quantity and item.product.stock_quantity > 0 %}
+                                                    <button class="btn btn-primary btn-sm w-100 mb-2 add-to-cart-btn" data-product-id="{{ item.product.web_id }}">
                                                         <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                                    </button>
+                                                {% elif item.product.is_web_product %}
+                                                    <button class="btn btn-secondary btn-sm w-100 mb-2" disabled>
+                                                        <i class="fas fa-times me-1"></i>Out of Stock
                                                     </button>
                                                 {% else %}
                                                     <button class="btn btn-secondary btn-sm w-100 mb-2" disabled>
-                                                        <i class="fas fa-times me-1"></i>Out of Stock
+                                                        <i class="fas fa-mobile-alt me-1"></i>Mobile Product
                                                     </button>
                                                 {% endif %}
                                                 <button class="btn btn-outline-danger btn-sm w-100 remove-wishlist-btn" data-item-id="{{ item.id }}">

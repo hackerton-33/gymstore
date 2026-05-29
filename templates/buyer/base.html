@@ -571,7 +571,9 @@ console.log('✅ Direct API polling started - updates every 10 seconds');
     }
     </style>
 </div>
+{% endblock %}
 
+{% block role_scripts %}
 <!-- Buyer-specific Scripts -->
 <script>
 // Wait for jQuery to load before initializing search
@@ -2163,5 +2165,4 @@ $(document).ready(function() {
 });
 </script>
 
-{% block extra_scripts %}{% endblock %}
 {% endblock %}

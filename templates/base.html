@@ -100,7 +100,7 @@
 
     <!-- Firebase Web SDK -->
     <script>
-      window.FIREBASE_CONFIG = {{ FIREBASE_CONFIG | tojson | safe }};
+      window.FIREBASE_CONFIG = JSON.parse('{{ FIREBASE_CONFIG | tojson | safe }}');
     </script>
     <script type="module" src="{{ url_for('static', filename='js/firebase/config.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/firebase/init.js') }}"></script>
@@ -736,7 +736,7 @@
         
         let html = '';
         messages.forEach(msg => {
-            const isSent = msg.sender_id == {{ session.get('user_id') or 0 }};
+            const isSent = msg.sender_id == '{{ session.get("user_id") or 0 }}';
             const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             
             html += `
@@ -813,18 +813,8 @@
 
     // Load unread count on page load
     document.addEventListener('DOMContentLoaded', function() {
-        {% if session.get('user_id') %}
-        fetch('/chat/api/unread-count')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateChatBadge(data.unread_count);
-                }
-            })
-            .catch(error => console.error('Error loading unread count:', error));
-        
-        // Refresh unread count every 30 seconds
-        setInterval(() => {
+        const userId = "{{ session.get('user_id') or '' }}";
+        if (userId) {
             fetch('/chat/api/unread-count')
                 .then(response => response.json())
                 .then(data => {
@@ -833,12 +823,24 @@
                     }
                 })
                 .catch(error => console.error('Error loading unread count:', error));
-        }, 30000);
-        {% endif %}
+            
+            // Refresh unread count every 30 seconds
+            setInterval(() => {
+                fetch('/chat/api/unread-count')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateChatBadge(data.unread_count);
+                        }
+                    })
+                    .catch(error => console.error('Error loading unread count:', error));
+            }, 30000);
+        }
     });
     </script>
     {% endif %}
 
     {% block extra_scripts %}{% endblock %}
+    {% block role_scripts %}{% endblock %}
 </body>
 </html>

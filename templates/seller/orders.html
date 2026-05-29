@@ -81,7 +81,7 @@
                         </td>
                         <td>
                             <span class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' if order.payment_status == 'pending' else 'danger' }}">
-                                {{ order.payment_status.title() }}
+                                {{ (order.payment_status or 'pending').title() }}
                             </span>
                         </td>
                         <td>{{ order.created_at.strftime('%m/%d/%Y') }}</td>

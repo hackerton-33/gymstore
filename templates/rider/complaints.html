@@ -50,8 +50,8 @@
                             <td>
                                 {% if complaint.status == 'open' %}
                                 <span class="badge bg-warning">Open</span>
-                                {% elif complaint.status == 'investigating' %}
-                                <span class="badge bg-info">Investigating</span>
+                                {% elif complaint.status == 'in_progress' %}
+                                <span class="badge bg-info">In Progress</span>
                                 {% elif complaint.status == 'resolved' %}
                                 <span class="badge bg-success">Resolved</span>
                                 {% elif complaint.status == 'closed' %}
@@ -106,12 +106,11 @@
                         <label class="form-label">Category</label>
                         <select name="category" class="form-select" required>
                             <option value="">Select Category</option>
-                            <option value="Order Issue">Order Issue</option>
-                            <option value="Payment Problem">Payment Problem</option>
-                            <option value="Customer Complaint">Customer Complaint</option>
-                            <option value="App/Technical Issue">App/Technical Issue</option>
-                            <option value="Safety Concern">Safety Concern</option>
-                            <option value="Other">Other</option>
+                            <option value="late_delivery">Late Delivery</option>
+                            <option value="damaged_item">Damaged Item</option>
+                            <option value="fraud">Fraud / Payment Issue</option>
+                            <option value="poor_service">Poor Service / Customer Complaint</option>
+                            <option value="other">Other Issue</option>
                         </select>
                     </div>
 
@@ -191,8 +190,8 @@ function viewComplaint(id, ticketNumber, subject, description, status, adminNote
     let statusBadge = '';
     if (status === 'open') {
         statusBadge = '<span class="badge bg-warning">Open</span>';
-    } else if (status === 'investigating') {
-        statusBadge = '<span class="badge bg-info">Investigating</span>';
+    } else if (status === 'in_progress') {
+        statusBadge = '<span class="badge bg-info">In Progress</span>';
     } else if (status === 'resolved') {
         statusBadge = '<span class="badge bg-success">Resolved</span>';
     } else if (status === 'closed') {
