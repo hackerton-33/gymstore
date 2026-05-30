@@ -460,6 +460,25 @@ def get_current_user():
         return db.session.get(User, session['user_id'])
     return None
 
+def get_firebase_uid_with_sync(user):
+    """Gets the firebase UID for a user, syncing from Firebase Auth if missing."""
+    if not user:
+        return None
+        
+    uid = user.firebase_uid
+    if not uid and _firebase_initialized:
+        try:
+            from firebase_admin import auth
+            fb_user = auth.get_user_by_email(user.email)
+            if fb_user:
+                uid = fb_user.uid
+                user.firebase_uid = uid
+                db.session.commit()
+        except Exception:
+            pass
+            
+    return uid if uid else str(user.id)
+
 # Manila timezone configuration
 MANILA_TZ = pytz.timezone('Asia/Manila')
 
@@ -3574,6 +3593,85 @@ def seed_database():
 
 # ==================== ROUTES ====================
 
+def authenticate_and_sync_firebase_user(username_or_email, password):
+    """Authenticate a user using the Firebase REST API and synchronize details from Firestore to SQL."""
+    if not _firebase_initialized:
+        return None
+
+    email = None
+    if '@' in username_or_email:
+        email = username_or_email
+    else:
+        try:
+            db_client = firebase_firestore.client()
+            query = db_client.collection('users').where('username', '==', username_or_email).limit(1).stream()
+            for doc in query:
+                email = doc.to_dict().get('email')
+        except Exception as q_e:
+            print(f"⚠️ Firestore username query failed: {q_e}")
+
+    if not email:
+        return None
+
+    try:
+        import requests
+        firebase_api_key = "AIzaSyBR433ttG5Ly8vY1vJ4og5ujhoBGlcAO74"
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
+        payload = {
+            "email": email,
+            "password": password,
+            "returnSecureToken": True
+        }
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            res_data = response.json()
+            firebase_uid = res_data.get('localId')
+            
+            db_client = firebase_firestore.client()
+            user_doc = db_client.collection('users').document(firebase_uid).get()
+            user_data = user_doc.to_dict() if user_doc.exists else {}
+
+            user = User.query.filter(
+                (User.email == email) | (User.firebase_uid == firebase_uid)
+            ).first()
+
+            if not user:
+                username = user_data.get('username', email.split('@')[0])
+                base_username = username
+                counter = 1
+                while User.query.filter_by(username=username).first():
+                    username = f"{base_username}{counter}"
+                    counter += 1
+
+                user = User(
+                    username=username,
+                    email=email,
+                    firebase_uid=firebase_uid,
+                    first_name=user_data.get('firstName', user_data.get('first_name', '')),
+                    last_name=user_data.get('lastName', user_data.get('last_name', '')),
+                    role=user_data.get('role', 'buyer'),
+                    approval_status=user_data.get('approvalStatus', user_data.get('approval_status', 'approved')),
+                    is_active=user_data.get('isActive', True)
+                )
+                user.phone_number = user_data.get('phoneNumber', user_data.get('phone', ''))
+                user.set_password(password)
+                db.session.add(user)
+                db.session.commit()
+                print(f"✅ Dynamically synced new Firebase user on login: {email}")
+            else:
+                user.firebase_uid = firebase_uid
+                user.set_password(password)
+                db.session.commit()
+                print(f"✅ Synced credentials for existing SQL user: {email}")
+                
+            return user
+        else:
+            print(f"❌ Firebase REST API auth failed: {response.text}")
+    except Exception as e:
+        print(f"⚠️ Error in authenticate_and_sync_firebase_user: {e}")
+
+    return None
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -3589,6 +3687,12 @@ def login():
         password_valid = False
         firebase_auth_used = False
         
+        if not user and _firebase_initialized:
+            user = authenticate_and_sync_firebase_user(username_or_email, password)
+            if user:
+                password_valid = True
+                firebase_auth_used = True
+
         if user:
             try:
                 password_valid = user.check_password(password)
@@ -3610,8 +3714,8 @@ def login():
                     flash('An unexpected error occurred. Please try again.', 'error')
                     print(f"Login ValueError: {e}")
             
-            # If SQL password check failed and user has firebase_uid, try Firebase authentication
-            if not password_valid and user.firebase_uid and _firebase_initialized:
+            # If SQL password check failed, try Firebase authentication
+            if not password_valid and _firebase_initialized:
                 try:
                     import requests
                     
@@ -3635,12 +3739,14 @@ def login():
                         
                         # Update SQL password hash so next login is faster
                         try:
+                            res_data = response.json()
+                            user.firebase_uid = res_data.get('localId')
                             user.set_password(password)
                             db.session.commit()
-                            print(f"✅ Updated SQL password for {user.email}")
+                            print(f"✅ Updated SQL password and Firebase UID for {user.email}")
                         except Exception as update_error:
                             db.session.rollback()
-                            print(f"⚠️ Could not update SQL password: {update_error}")
+                            print(f"⚠️ Could not update SQL password/UID: {update_error}")
                     else:
                         print(f"❌ Firebase authentication failed for {user.email}: {response.text}")
                         
@@ -3701,6 +3807,12 @@ def index():
         password_valid = False
         firebase_auth_used = False
         
+        if not user and _firebase_initialized:
+            user = authenticate_and_sync_firebase_user(username_or_email, password)
+            if user:
+                password_valid = True
+                firebase_auth_used = True
+
         if user:
             try:
                 password_valid = user.check_password(password)
@@ -3722,8 +3834,8 @@ def index():
                     flash('An unexpected error occurred. Please try again.', 'error')
                     print(f"Login ValueError: {e}")
             
-            # If SQL password check failed and user has firebase_uid, try Firebase authentication
-            if not password_valid and user.firebase_uid and _firebase_initialized:
+            # If SQL password check failed, try Firebase authentication
+            if not password_valid and _firebase_initialized:
                 try:
                     import requests
                     
@@ -3747,12 +3859,14 @@ def index():
                         
                         # Update SQL password hash so next login is faster
                         try:
+                            res_data = response.json()
+                            user.firebase_uid = res_data.get('localId')
                             user.set_password(password)
                             db.session.commit()
-                            print(f"✅ Updated SQL password for {user.email}")
+                            print(f"✅ Updated SQL password and Firebase UID for {user.email}")
                         except Exception as update_error:
                             db.session.rollback()
-                            print(f"⚠️ Could not update SQL password: {update_error}")
+                            print(f"⚠️ Could not update SQL password/UID: {update_error}")
                     else:
                         print(f"❌ Firebase authentication failed for {user.email}: {response.text}")
                         
@@ -5349,12 +5463,46 @@ def verify_firebase_token():
                 'message': f'Your account is {approval_status}. Please wait for admin approval.'
             }), 403
 
+        # Check if user already exists in SQL
+        user = User.query.filter(
+            (User.email == email) | (User.firebase_uid == uid)
+        ).first()
+
+        if not user:
+            username = user_data.get('username', email.split('@')[0])
+            base_username = username
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            user = User(
+                username=username,
+                email=email,
+                firebase_uid=uid,
+                first_name=user_data.get('firstName', user_data.get('first_name', '')),
+                last_name=user_data.get('lastName', user_data.get('last_name', '')),
+                role=user_data.get('role', 'buyer'),
+                approval_status=user_data.get('approvalStatus', user_data.get('approval_status', 'approved')),
+                is_active=user_data.get('isActive', True)
+            )
+            user.phone_number = user_data.get('phoneNumber', user_data.get('phone', ''))
+            user.set_password('firebase_user_' + uid[:8])
+            db.session.add(user)
+            db.session.commit()
+            print(f"✅ Dynamically synced new Firebase user on token verify: {email}")
+        else:
+            if not user.firebase_uid:
+                user.firebase_uid = uid
+                db.session.commit()
+
         # Create Flask session
-        session['user_id'] = uid
+        session['user_id'] = user.id
+        session['user_role'] = user.role
         session['email'] = email
-        session['role'] = user_data.get('role', 'buyer')
-        session['first_name'] = user_data.get('first_name', '')
-        session['last_name'] = user_data.get('last_name', '')
+        session['role'] = user.role
+        session['first_name'] = user.first_name
+        session['last_name'] = user.last_name
         session['firebase_uid'] = uid  # Store Firebase UID
         session.permanent = True
         
@@ -5547,7 +5695,7 @@ def buyer_cart():
         from firestore_helper import get_cart_items_firestore
         
         # Get cart items from Firestore using Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         firestore_items = get_cart_items_firestore(user_id)
         
         # Convert Firestore items to objects with properties for template compatibility
@@ -5915,7 +6063,7 @@ def buyer_checkout():
     from firestore_helper import get_cart_items_firestore, clear_cart_firestore
     
     # Use Firebase UID for cross-platform sync
-    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    user_id = get_firebase_uid_with_sync(user)
     
     # Get cart items from Firestore
     firestore_items = get_cart_items_firestore(user_id)
@@ -6375,7 +6523,7 @@ def buyer_orders():
     # Try to get orders from Firestore first
     from firestore_helper import get_orders_firestore
     # Use Firebase UID for cross-platform sync
-    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    user_id = get_firebase_uid_with_sync(user)
     orders = get_orders_firestore(user_id, 'buyer')
     
     # Apply status filter if provided
@@ -6605,7 +6753,7 @@ def buyer_profile():
     # Get wishlist count from Firestore
     from firestore_helper import get_wishlist_items_firestore
     # Use Firebase UID for cross-platform sync
-    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    user_id = get_firebase_uid_with_sync(user)
     wishlist_items = get_wishlist_items_firestore(user_id)
     wishlist_count = len(wishlist_items)
     
@@ -6737,7 +6885,7 @@ def buyer_profile_wishlist():
     from firestore_helper import get_wishlist_items_firestore
     
     # Use Firebase UID for cross-platform sync
-    user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    user_id = get_firebase_uid_with_sync(user)
     
     # Get wishlist items from Firestore
     firestore_items = get_wishlist_items_firestore(user_id)
@@ -7105,7 +7253,21 @@ def seller_dashboard():
     
     # 2. Get Firestore orders for this seller
     from firestore_helper import get_orders_firestore
-    user_firebase_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    user_firebase_id = user.firebase_uid
+    if not user_firebase_id and _firebase_initialized:
+        try:
+            from firebase_admin import auth
+            fb_user = auth.get_user_by_email(user.email)
+            if fb_user:
+                user_firebase_id = fb_user.uid
+                user.firebase_uid = user_firebase_id
+                db.session.commit()
+        except Exception:
+            pass
+            
+    if not user_firebase_id:
+        user_firebase_id = str(user.id)
+        
     all_fs_orders = get_orders_firestore(None, 'admin')
     
     fs_seller_orders = []
@@ -7518,7 +7680,7 @@ def add_product():
                 from firestore_helper import create_product_firestore
                 
                 # Use Firebase UID for cross-platform sync (same as cart fix)
-                seller_id = user.firebase_uid if user.firebase_uid else str(user.id)
+                seller_id = get_firebase_uid_with_sync(user)
                 
                 product_data = {
                     'sellerId': seller_id,  # ✅ Use Firebase UID for mobile sync
@@ -7738,8 +7900,25 @@ def seller_orders():
     
     # Try to get orders from Firestore first
     from firestore_helper import get_orders_firestore
+    
     # Use Firebase UID for cross-platform sync
-    user_firebase_id = user.firebase_uid if user.firebase_uid else str(user.id)
+    # If the user doesn't have a firebase_uid in SQL, try to fetch it by email to sync accounts
+    user_firebase_id = user.firebase_uid
+    if not user_firebase_id and _firebase_initialized:
+        try:
+            from firebase_admin import auth
+            fb_user = auth.get_user_by_email(user.email)
+            if fb_user:
+                user_firebase_id = fb_user.uid
+                user.firebase_uid = user_firebase_id
+                db.session.commit()
+                print(f"✅ Synced firebase_uid for seller {user.email}")
+        except Exception:
+            pass
+            
+    if not user_firebase_id:
+        user_firebase_id = str(user.id)
+        
     all_orders = get_orders_firestore(None, 'admin')
     
     # Filter orders that contain products from this seller
@@ -11647,7 +11826,7 @@ def api_add_to_cart():
         computed_unit_price = float(product.price) * multiplier
         
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         
         # Add to Firestore
         result = add_to_cart_firestore(
@@ -11683,7 +11862,7 @@ def api_remove_from_cart():
         
         user = get_current_user()
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         result = remove_from_cart_firestore(user_id, item_id)
         
         return jsonify(result)
@@ -11722,7 +11901,7 @@ def api_update_cart():
         
         user = get_current_user()
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         result = update_cart_quantity_firestore(user_id, item_id, quantity)
         
         return jsonify(result)
@@ -11823,7 +12002,7 @@ def api_add_to_wishlist():
             return jsonify({'success': False, 'message': 'Product not found'})
         
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         
         # Add to Firestore wishlist
         result = add_to_wishlist_firestore(
@@ -11854,7 +12033,7 @@ def api_remove_from_wishlist():
             return jsonify({'success': False, 'message': 'Product ID is required'})
         
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         
         result = remove_from_wishlist_firestore(user_id, str(product_id))
         return jsonify(result)
@@ -11877,7 +12056,7 @@ def api_toggle_wishlist():
             return jsonify({'success': False, 'message': 'Product ID is required'})
         
         # Use Firebase UID for cross-platform sync
-        user_id = user.firebase_uid if user.firebase_uid else str(user.id)
+        user_id = get_firebase_uid_with_sync(user)
         
         # Check if already in wishlist
         in_wishlist = is_in_wishlist_firestore(user_id, str(product_id))
