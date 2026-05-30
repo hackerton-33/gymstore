@@ -438,19 +438,7 @@ def verify_db_connection():
     except Exception as e:
         return False, str(e)
 
-# Create tables if missing
-with app.app_context():
-    try:
-        db.create_all()
-        print("[OK] Database tables created/verified successfully")
-    except Exception as e:
-        print(f"[ERROR] Failed to create database tables: {e}")
-    ok, current_db = verify_db_connection()
-    if ok:
 
-        print(f"[DB] Connected. Current database: {current_db}")
-    else:
-        print(f"[ERROR] DB connection check failed: {current_db}")
 
 # Lightweight health endpoint to confirm DB connectivity
 @app.route('/health/db')
@@ -14365,6 +14353,19 @@ def internal_error(error):
     traceback.print_exc()
     db.session.rollback()
     return render_template('errors/500.html'), 500
+
+# Create tables if missing (moved here to run after models are defined)
+with app.app_context():
+    try:
+        db.create_all()
+        print("[OK] Database tables created/verified successfully")
+    except Exception as e:
+        print(f"[ERROR] Failed to create database tables: {e}")
+    ok, current_db = verify_db_connection()
+    if ok:
+        print(f"[DB] Connected. Current database: {current_db}")
+    else:
+        print(f"[ERROR] DB connection check failed: {current_db}")
 
 # ==================== APPLICATION INITIALIZATION ====================
 
