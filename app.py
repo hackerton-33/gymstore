@@ -14359,6 +14359,12 @@ with app.app_context():
     try:
         db.create_all()
         print("[OK] Database tables created/verified successfully")
+        # Seed database (create default admin user, categories, and settings)
+        try:
+            seed_database()
+            print("[OK] Database seeded successfully!")
+        except Exception as seed_err:
+            print(f"[ERROR] Failed to seed database: {seed_err}")
     except Exception as e:
         print(f"[ERROR] Failed to create database tables: {e}")
     ok, current_db = verify_db_connection()
