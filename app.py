@@ -271,19 +271,36 @@ def normalize_order_for_template(order):
 # -------------------- Firebase Admin SDK --------------------
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth_admin, firestore as firebase_firestore
+import json
 
 _firebase_initialized = False
 try:
-    _service_account_path = os.path.join(os.path.dirname(__file__), 'gym-ecommerce-ce8ab-firebase-adminsdk-fbsvc-53b91bdae9.json')
-    if os.path.exists(_service_account_path):
-        cred = credentials.Certificate(_service_account_path)
-        firebase_admin.initialize_app(cred)
-        _firebase_initialized = True
-        print("[OK] Firebase Admin SDK initialized")
-    else:
-        print("[WARNING] serviceAccountKey.json not found — Firebase Admin features disabled")
+    # Method 1: Try environment variable (for Railway/production deployment)
+    _firebase_creds_json = os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')
+    if _firebase_creds_json:
+        try:
+            _creds_dict = json.loads(_firebase_creds_json)
+            cred = credentials.Certificate(_creds_dict)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            print("[OK] Firebase Admin SDK initialized from environment variable")
+        except Exception as env_e:
+            print(f"[WARNING] Firebase init from env var failed: {env_e}")
+    
+    # Method 2: Try local JSON file (for local development)
+    if not _firebase_initialized:
+        _service_account_path = os.path.join(os.path.dirname(__file__), 'gym-ecommerce-ce8ab-firebase-adminsdk-fbsvc-53b91bdae9.json')
+        if os.path.exists(_service_account_path):
+            cred = credentials.Certificate(_service_account_path)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            print("[OK] Firebase Admin SDK initialized from local file")
+        else:
+            if not _firebase_initialized:
+                print("[WARNING] serviceAccountKey.json not found — Firebase Admin features disabled")
 except Exception as e:
     print(f"[WARNING] Firebase Admin SDK init failed: {e}")
+
 
 # Initialize Flask app
 app = Flask(__name__)
