@@ -440,9 +440,14 @@ def verify_db_connection():
 
 # Create tables if missing
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("[OK] Database tables created/verified successfully")
+    except Exception as e:
+        print(f"[ERROR] Failed to create database tables: {e}")
     ok, current_db = verify_db_connection()
     if ok:
+
         print(f"[DB] Connected. Current database: {current_db}")
     else:
         print(f"[ERROR] DB connection check failed: {current_db}")
