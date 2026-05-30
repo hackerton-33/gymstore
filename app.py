@@ -5590,44 +5590,56 @@ def buyer_shop():
         filters['inStockOnly'] = True
     
     # Get products from Firestore
-    if search_query:
-        # Use search function for text search
-        all_products = search_products_firestore(search_query, filters, limit=100)
+    try:
+        if search_query:
+            # Use search function for text search
+            all_products = search_products_firestore(search_query, filters, limit=100)
+            
+            # Apply category filter if specified
+            if category_filter:
+                all_products = [p for p in all_products if p.get('category') == category_filter]
+            
+            # Apply sorting
+            if sort_by == 'latest':
+                all_products.sort(key=lambda x: x.get('createdAt', 0), reverse=True)
+            elif sort_by == 'price_low':
+                all_products.sort(key=lambda x: x.get('price', 0))
+            elif sort_by == 'price_high':
+                all_products.sort(key=lambda x: x.get('price', 0), reverse=True)
+            elif sort_by == 'top_sales':
+                all_products.sort(key=lambda x: x.get('totalSold', 0), reverse=True)
+            else:  # name
+                all_products.sort(key=lambda x: x.get('name', ''))
+            
+            # Manual pagination
+            total_products = len(all_products)
+            products_list = all_products[offset:offset + per_page]
+        else:
+            # Use filtered query
+            if category_filter:
+                filters['category'] = category_filter
+            
+            # Get products with sorting and pagination
+            products_list = get_products_firestore(
+                filters=filters,
+                sort_by=sort_by,
+                limit=per_page,
+                offset=offset
+            )
+            
+            # Get total count for pagination
+            total_products = count_products_firestore(filters)
         
-        # Apply category filter if specified
-        if category_filter:
-            all_products = [p for p in all_products if p.get('category') == category_filter]
-        
-        # Apply sorting
-        if sort_by == 'latest':
-            all_products.sort(key=lambda x: x.get('createdAt', 0), reverse=True)
-        elif sort_by == 'price_low':
-            all_products.sort(key=lambda x: x.get('price', 0))
-        elif sort_by == 'price_high':
-            all_products.sort(key=lambda x: x.get('price', 0), reverse=True)
-        elif sort_by == 'top_sales':
-            all_products.sort(key=lambda x: x.get('totalSold', 0), reverse=True)
-        else:  # name
-            all_products.sort(key=lambda x: x.get('name', ''))
-        
-        # Manual pagination
-        total_products = len(all_products)
-        products_list = all_products[offset:offset + per_page]
-    else:
-        # Use filtered query
-        if category_filter:
-            filters['category'] = category_filter
-        
-        # Get products with sorting and pagination
-        products_list = get_products_firestore(
-            filters=filters,
-            sort_by=sort_by,
-            limit=per_page,
-            offset=offset
-        )
-        
-        # Get total count for pagination
-        total_products = count_products_firestore(filters)
+        # Get categories for filter - get unique categories from Firestore
+        all_categories_data = get_products_firestore(filters={'isActive': True, 'approvalStatus': 'approved'})
+        categories = sorted(list(set(p.get('category', 'Uncategorized') for p in all_categories_data)))
+
+    except RuntimeError as firebase_err:
+        print(f"[WARNING] Firestore unavailable in buyer_shop: {firebase_err}")
+        products_list = []
+        total_products = 0
+        categories = []
+
     
     # Create pagination object (mimicking Flask-SQLAlchemy pagination)
     class PaginationAdapter:
@@ -5687,11 +5699,8 @@ def buyer_shop():
         total=total_products
     )
     
-    # Get categories for filter - get unique categories from Firestore
-    all_categories_data = get_products_firestore(filters={'isActive': True, 'approvalStatus': 'approved'})
-    categories = sorted(list(set(p.get('category', 'Uncategorized') for p in all_categories_data)))
-    
     user = get_current_user()
+
     
     return render_template('buyer/shop.html', 
                          products=products,

@@ -3,12 +3,18 @@ Firestore Helper Module
 Provides utility functions for Firestore operations
 """
 from firebase_admin import firestore
+import firebase_admin
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 def get_firestore_client():
-    """Get Firestore client instance"""
+    """Get Firestore client instance. Raises RuntimeError if Firebase is not initialized."""
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        raise RuntimeError("Firebase is not initialized. Set the FIREBASE_SERVICE_ACCOUNT_JSON environment variable on Railway.")
     return firestore.client()
+
 
 # ==================== CART OPERATIONS ====================
 
