@@ -315,47 +315,56 @@ os.makedirs(app.config['PRODUCT_UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'static', 'uploads', 'business_docs'), exist_ok=True)
 
 # Database configuration
-DATABASE_CONFIG = {
-    'mysql': {
-        'host': 'localhost',
-        'port': 3306,
-        'user': 'root',
-        'password': '',  # Update this with your SQLyog MySQL password
-        'database': 'gym_store_db',
-        'charset': 'utf8mb4'
-    }
-}
+railway_db = os.getenv('DATABASE_URL')
 
-# Try MySQL first, fallback to SQLite
-try:
-    # Test MySQL connection
-    import pymysql
-    connection = pymysql.connect(
-        host=DATABASE_CONFIG['mysql']['host'],
-        port=DATABASE_CONFIG['mysql']['port'],
-        user=DATABASE_CONFIG['mysql']['user'],
-        password=DATABASE_CONFIG['mysql']['password'],
-        database=DATABASE_CONFIG['mysql']['database'],
-        charset=DATABASE_CONFIG['mysql']['charset']
-    )
-    connection.close()
+if railway_db:
+    # Railway provides mysql://, but SQLAlchemy needs mysql+pymysql://
+    if railway_db.startswith("mysql://"):
+        railway_db = railway_db.replace("mysql://", "mysql+pymysql://", 1)
     
-    # MySQL connection successful
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+pymysql://{DATABASE_CONFIG['mysql']['user']}:"
-        f"{DATABASE_CONFIG['mysql']['password']}@"
-        f"{DATABASE_CONFIG['mysql']['host']}:"
-        f"{DATABASE_CONFIG['mysql']['port']}/"
-        f"{DATABASE_CONFIG['mysql']['database']}?"
-        f"charset={DATABASE_CONFIG['mysql']['charset']}"
-    )
-    print("[OK] Using MySQL database")
+    app.config['SQLALCHEMY_DATABASE_URI'] = railway_db
+    print("[OK] Using Database from DATABASE_URL (Railway)")
+else:
+    DATABASE_CONFIG = {
+        'mysql': {
+            'host': 'localhost',
+            'port': 3306,
+            'user': 'root',
+            'password': '',  # Update this with your SQLyog MySQL password
+            'database': 'gym_store_db',
+            'charset': 'utf8mb4'
+        }
+    }
     
-except Exception as e:
-    # Fallback to SQLite
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gym_store.db'
-    print(f"[WARNING] MySQL connection failed: {e}")
-    print("[INFO] Using SQLite database as fallback")
+    # Try local MySQL first, fallback to SQLite
+    try:
+        import pymysql
+        connection = pymysql.connect(
+            host=DATABASE_CONFIG['mysql']['host'],
+            port=DATABASE_CONFIG['mysql']['port'],
+            user=DATABASE_CONFIG['mysql']['user'],
+            password=DATABASE_CONFIG['mysql']['password'],
+            database=DATABASE_CONFIG['mysql']['database'],
+            charset=DATABASE_CONFIG['mysql']['charset']
+        )
+        connection.close()
+        
+        # MySQL connection successful
+        app.config['SQLALCHEMY_DATABASE_URI'] = (
+            f"mysql+pymysql://{DATABASE_CONFIG['mysql']['user']}:"
+            f"{DATABASE_CONFIG['mysql']['password']}@"
+            f"{DATABASE_CONFIG['mysql']['host']}:"
+            f"{DATABASE_CONFIG['mysql']['port']}/"
+            f"{DATABASE_CONFIG['mysql']['database']}?"
+            f"charset={DATABASE_CONFIG['mysql']['charset']}"
+        )
+        print("[OK] Using local MySQL database")
+        
+    except Exception as e:
+        # Fallback to SQLite
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gym_store.db'
+        print(f"[WARNING] Local MySQL connection failed: {e}")
+        print("[INFO] Using SQLite database as fallback")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
